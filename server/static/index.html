@@ -210,6 +210,13 @@
   .st-single { text-align: center; font-size: 13px; color: var(--muted); }
   .st-single b { color: var(--ink); }
   .file-btn { display: inline-flex; align-items: center; }
+  .subs { position: fixed; left: 50%; bottom: 18px; transform: translate(-50%, 8px); z-index: 8; max-width: min(720px, calc(100vw - 24px));
+          background: rgba(10,16,30,.82); color: #fff; padding: 8px 14px; border-radius: 10px; font-size: 15px; line-height: 1.35;
+          opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; text-align: center; }
+  .subs.on { opacity: 1; transform: translate(-50%, 0); }
+  .subs b { margin-right: 8px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+  .subs b.A { color: var(--ball); } .subs b.B { color: #8fd3ff; } .subs b.ump { color: #ffd28f; }
+  body.touch-ui .subs { bottom: auto; top: 64px; font-size: 13px; }
   .mp-badge { display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; font-size: 11px; font-weight: 700; color: var(--ok); }
   .mp-badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
   .invite { position: fixed; left: 50%; top: 70px; transform: translateX(-50%); z-index: 60; display: flex; align-items: center; gap: 12px;
@@ -531,9 +538,11 @@
     </div>
     <div class="modal-body" data-pane="view" hidden>
       <div class="field"><span>Sound</span>
-        <div class="seg" id="sSound"><button data-v="all">Commentary on</button><button data-v="nocomm">Sound only</button><button data-v="off">Muted</button></div></div>
+        <div class="seg" id="sSound"><button data-v="all">Commentary on (Mark and Lena)</button><button data-v="nocomm">Sound only</button><button data-v="off">Muted</button></div></div>
       <div class="field"><span>Master volume</span><div class="range"><input type="range" id="sVol" min="0" max="1" step="0.05"><output id="oVol"></output></div></div>
       <div class="field"><span>Music volume</span><div class="range"><input type="range" id="sMusic" min="0" max="1" step="0.05"><output id="oMusic"></output></div></div>
+      <div class="field"><span>Commentary subtitles<small>Shows who is speaking: Mark, Lena or the umpire.</small></span>
+        <div class="seg" id="sSubs"><button data-v="on">On</button><button data-v="off">Off</button></div></div>
       <div class="field"><span>Your own music<small>Pick songs you own from your device. They play at changeovers and on the match stats screen. They stay on this device and are never uploaded.</small></span>
         <div><div class="on-row"><label class="btn quiet file-btn">Choose songs<input type="file" id="sSongs" accept="audio/*" multiple hidden></label><button class="btn quiet" id="sSongsClear" type="button">Use built-in music</button></div>
         <div class="muted-note" id="sSongsNote"></div></div></div>
@@ -620,6 +629,7 @@
   <div class="inv-btns"><button class="btn quiet" id="invNo" type="button">Decline</button><button class="btn primary" id="invYes" type="button">Accept</button></div>
 </div>
 <div class="toast" id="toast" hidden role="status" aria-live="polite"></div>
+<div class="subs" id="subs" aria-live="off"></div>
 <div class="coach" id="coach" hidden role="status" aria-live="polite">
   <div class="coach-head"><span class="coach-tag" id="coachTag">Coach Omega</span><button type="button" id="coachClose" aria-label="Close">✕</button></div>
   <div id="coachText"></div>
@@ -687,7 +697,7 @@ const store = {
   get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
 };
-const SET_DEFAULT = { touch: { mode: "stick", scale: 1, pos: {} }, speed: 1, diff: "normal", breakSecs: 20, swing: "auto", predict: true, racket: "allround",
+const SET_DEFAULT = { subs: true, touch: { mode: "stick", scale: 1, pos: {} }, speed: 1, diff: "normal", breakSecs: 20, swing: "auto", predict: true, racket: "allround",
   kit: { shirt: "#e3ef4b", shorts: "#ffffff", skin: "#c68b5f", head: "cap", hand: "right" },
   vol: .9, music: .7, crowd: 1, cam: "tv", gfx: "high" };
 let SET = JSON.parse(JSON.stringify(SET_DEFAULT));
@@ -979,7 +989,7 @@ const STADIUMS = {
    ===================================================================== */
 const Sound = {
   ctx: null, master: null, murmur: null, murmurGain: null, clapBuf: null, on: true, comm: true,
-  queue: [], voices: { ump: null, comm: null }, music: null,
+  queue: [], voices: { ump: null, A: null, B: null }, music: null, wd: null, utt: null, current: null,
   init() {
     if (this.ctx) { if (this.ctx.state === "suspended") this.ctx.resume(); return; }
     const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
@@ -993,13 +1003,6 @@ const Sound = {
     this.clapBuf = buf;
     this.pickVoices();
     if (window.speechSynthesis) speechSynthesis.onvoiceschanged = () => this.pickVoices();
-  },
-  pickVoices() {
-    if (!window.speechSynthesis) return;
-    const en = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang));
-    const gb = en.filter(v => /GB|UK/i.test(v.lang + v.name));
-    this.voices.ump = gb[0] || en[0] || null;                       // umpire: crisp British voice if there is one
-    this.voices.comm = en.find(v => v !== this.voices.ump && /US|AU|Male|David|Daniel|Guy/i.test(v.lang + v.name)) || en.find(v => v !== this.voices.ump) || this.voices.ump;
   },
   noise(dur) {
     const sr = this.ctx.sampleRate, b = this.ctx.createBuffer(1, Math.floor(sr * dur), sr), d = b.getChannelData(0);
@@ -1069,35 +1072,82 @@ const Sound = {
   },
   crowdLevel(v) { if (this.murmurGain && this.ctx) this.murmurGain.gain.linearRampToValueAtTime(v * SET.crowd, this.ctx.currentTime + 1); },
   stopMurmur() { if (this.murmur) { try { this.murmur.stop(); } catch {} this.murmur = null; this.murmurGain = null; } },
-
-  // ---- speech: the chair umpire always wins; the commentator talks in the gaps ----
-  umpire(text) { this.enqueue(text, "ump", true); },
-  commentate(text) { if (this.comm) this.enqueue(text, "comm", false); },
+  // Three voices: Mark (play-by-play), Lena (analysis) and the chair umpire. Fictional commentators.
+  pickVoices() {
+    if (!window.speechSynthesis) return;
+    const en = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang));
+    if (!en.length) return;
+    const nice = (v) => (/natural|neural|online|google|premium|enhanced/i.test(v.name) ? 2 : 0) + (v.localService ? 0 : 1);
+    const best = (list) => list.slice().sort((x, y) => nice(y) - nice(x))[0];
+    const isFem = (v) => /female|samantha|zira|karen|moira|tessa|fiona|victoria|susan|hazel|libby|sonia|serena|kate|jenny|aria|emma|ava|allison|catherine|natasha|clara|joanna|salli|amy/i.test(v.name);
+    const isMale = (v) => !isFem(v) && /\bmale\b|daniel|david|alex|fred|guy|george|ryan|james|arthur|oliver|thomas|mark|christopher|eric|brian|matthew|william|liam/i.test(v.name);
+    const males = en.filter(isMale), fems = en.filter(isFem);
+    const A = best(males.filter(v => /US|GB|AU/i.test(v.lang))) || best(males) || best(en);
+    const B = best(fems.filter(v => v !== A)) || best(en.filter(v => v !== A)) || A;
+    const gb = en.filter(v => /GB|UK/i.test(v.lang + v.name) && v !== A && v !== B);
+    this.voices = { A, B, ump: best(gb) || best(en.filter(v => v !== A && v !== B)) || A };
+  },
+  CAST: { A: "Mark", B: "Lena", ump: "Umpire" },
+  umpire(text) { this.enqueue([{ who: "ump", text }], true); },
+  commentate(text) { this.talk([["A", text]]); },
+  // lines: [["A", "text"], ["B", "text"], ...] spoken in order as one exchange
+  talk(lines, opts = {}) {
+    if (!this.comm || !lines || !lines.length) return;
+    const gid = Math.random();
+    this.enqueue(lines.filter(l => l && l[1]).map(([who, text], i) => ({ who, text, gid, first: i === 0, prio: opts.prio || 1, tag: opts.tag })), false);
+  },
   say(text) { this.umpire(text); },
-  enqueue(text, who, urgent) {
-    if (!this.on || !window.speechSynthesis) return;
-    const item = { text, who, at: performance.now() };
+  enqueue(items, urgent) {
+    if (!this.on || !window.speechSynthesis || !items.length) return;
+    const now = performance.now(); items.forEach(it => it.at = now);
     if (urgent) {
+      if (this.current && this.current.prio === 0) this.stopCurrent();        // the umpire cuts off idle chat
       this.queue = this.queue.filter(q => q.who !== "ump");
-      if (this.current && this.current.who === "comm") { this.current = null; speechSynthesis.cancel(); }
-      this.queue.unshift(item);
-    } else { this.queue.push(item); if (this.queue.length > 3) this.queue.splice(1, 1); }
+      this.queue.unshift(...items);
+    } else {
+      const prio = items[0].prio;
+      // newer, more important talk replaces chat that hasn't started yet
+      this.queue = this.queue.filter(q => q.who === "ump" || q.prio > prio || (q.prio === prio && q.prio >= 2));
+      this.queue.push(...items);
+      if (this.queue.length > 10) this.queue.splice(0, this.queue.length - 10);
+    }
     this.pump();
   },
+  stopCurrent() { clearTimeout(this.wd); this.current = null; try { speechSynthesis.cancel(); } catch {} },
+  speaking() { return !!this.current || this.queue.some(q => q.who !== "ump"); },
   pump() {
     if (this.current || !this.queue.length || G.paused) return;
-    const item = this.queue.shift();
-    if (item.who === "comm" && performance.now() - item.at > 7000) return this.pump();   // drop stale lines
+    const item = this.queue[0];
+    if (item.who !== "ump") {
+      if (G.phase === "rally" && G.running) return;                    // commentators go quiet while the ball is in play
+      if (item.first && performance.now() - item.at > 6500) {           // the moment has passed: drop the whole exchange
+        this.queue = this.queue.filter(q => q.gid !== item.gid); return this.pump();
+      }
+    }
+    this.queue.shift();
     try {
-      const u = new SpeechSynthesisUtterance(item.text);
-      if (item.who === "ump") { u.voice = this.voices.ump; u.rate = .98; u.pitch = .95; u.volume = 1; }
-      else { u.voice = this.voices.comm; u.rate = 1.08; u.pitch = 1.05; u.volume = .85; }
-      this.current = item;
-      u.onend = u.onerror = () => { if (this.current === item) this.current = null; setTimeout(() => this.pump(), 150); };
+      const u = new SpeechSynthesisUtterance(item.text), v = this.voices || {};
+      const same = v.A && v.B && v.A === v.B;
+      if (item.who === "ump") { u.voice = v.ump || null; u.rate = 1.02; u.pitch = .9; u.volume = 1; }
+      else if (item.who === "B") { u.voice = v.B || null; u.rate = 1.1; u.pitch = same ? .78 : 1.02; u.volume = .9; }
+      else { u.voice = v.A || null; u.rate = 1.17; u.pitch = same ? 1.12 : 1.0; u.volume = .92; }
+      this.current = item; this.utt = u;                                 // keep a reference: some browsers drop it otherwise
+      const done = () => {
+        if (this.current !== item) return;
+        clearTimeout(this.wd); this.current = null; this.utt = null;
+        const next = this.queue[0];
+        setTimeout(() => this.pump(), next && next.gid === item.gid ? 60 : 160);
+        if (item.tag === "intro" && !(next && next.gid === item.gid)) G.holdServeUntil = 0;
+        subtitles(null);
+      };
+      u.onend = u.onerror = done;
+      // watchdog: if the browser never reports the end, move on anyway
+      clearTimeout(this.wd); this.wd = setTimeout(done, 1600 + item.text.split(/\s+/).length * 430 / u.rate);
+      subtitles(item);
       speechSynthesis.speak(u);
     } catch { this.current = null; }
   },
-  hush() { this.queue = []; this.current = null; if (window.speechSynthesis) speechSynthesis.cancel(); },
+  hush() { this.queue = []; clearTimeout(this.wd); this.current = null; if (window.speechSynthesis) speechSynthesis.cancel(); subtitles(null); },
 
   // ---- changeover music: original tracks generated live (no recordings used) ----
   TRACKS: [
@@ -1214,6 +1264,7 @@ function renderSettings() {
   segment("sDiff", SET.diff, v => SET.diff = v);
   segment("sBreak", SET.breakSecs, v => SET.breakSecs = Number(v));
   segment("sSwing", SET.swing, v => SET.swing = v);
+  segment("sSubs", SET.subs ? "on" : "off", v => { SET.subs = v === "on"; if (!SET.subs) subtitles(null); });
   segment("sFmt", $("fmtSel").value, v => { $("fmtSel").value = v; SET.fmt = v; });
   segment("sMode", $("modeSel").value, v => { $("modeSel").value = v; SET.mode = v; });
   segment("sTouch", SET.touch.mode, v => SET.touch.mode = v);
@@ -1347,7 +1398,7 @@ function startMatch() {
   Pred.locked = false; Pred.pick = null; $("predRes").textContent = ""; $("predict").hidden = !SET.predict;
   Sound.hush(); Sound.stopMusic(); $("breakBox").hidden = true; G.breakPending = false;
   Sound.startMurmur();
-  Sound.commentate(Comm.start(G.p[0], G.p[1]));
+  Booth.intro(G.p[0], G.p[1]);
   Sound.umpire(`${G.p[G.server].name} to serve. Play.`);
   setupServe();
   showBanner(`${G.p[0].name} vs ${G.p[1].name}`, `${G.st.name}, ${G.fmt === "quick" ? "first to 3 games" : "one set"}`, 1600);
@@ -1384,7 +1435,7 @@ function startBreak() {
   G.phase = "break"; G.breakLeft = SET.breakSecs;
   G.p.forEach(p => { p.tx = 7.0; p.ty = p.side * 2.0; });       // walk to the benches beside the umpire's chair
   Sound.umpire("Time. Changeover.");
-  Sound.commentate(Comm.changeover());
+  Booth.changeover();
   askCoach();
   const song = Sound.startMusic();
   $("breakSong").textContent = song ? `Now playing: ${song} (generated live)` : "Changeover";
@@ -1419,8 +1470,7 @@ function setupServe() {
   G.phase = "serve"; G.timer = 0; G.rally = 0;
   if (G.running && G.faults === 0) {
     if (G.excite > .55 && Math.random() < .5) Sound.umpire("Quiet, please. Thank you.");
-    const pl = Comm.pressure(sp, rp, G.points[s], G.points[1 - s]);
-    if (pl) Sound.commentate(pl);
+    Booth.beforeServe(sp, rp);
   }
   Pred.render();
   if (sp.human) showBanner(G.faults ? "Second serve" : "Your serve", "Press Space. Hold ← for wide, → for down the T");
@@ -1511,34 +1561,159 @@ function fault(call) {
 }
 const WORDS = ["love", "fifteen", "thirty", "forty"];
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-const Comm = {
-  start(a, b) { return pick([`Welcome to ${G.st.name}. ${a.name} against ${b.name}, and the crowd is ready.`,
-                             `Good afternoon from ${G.st.name}. ${a.name} takes on ${b.name}. This should be a good one.`]); },
-  point(w, l, call, rally) {
-    if (call === "Ace") return pick([`Ace! Nothing ${l.name} could do about that.`, `Straight past ${l.name}. Ace.`]);
-    if (call === "Double fault") return pick([`A double fault. That's a gift for ${w.name}.`, `Nerves showing there, double fault.`]);
-    if (rally >= 8) return pick([`What a rally! ${rally} shots, and ${w.name} finally wins it.`, `The crowd loved that. ${rally} shots in that point.`]);
-    if (call === "Net") return pick([`Into the net. ${l.name} will want that one back.`, `Just couldn't clear the net.`]);
-    if (call === "Out") return Math.random() < .5 ? pick([`Just long.`, `Wide, by a whisker.`, `That one drifted out.`]) : "";
-    return Math.random() < .45 ? pick([`Lovely shot from ${w.name}.`, `${w.name} too good there.`, `Clean winner from ${w.name}.`]) : "";
+/* ---------- The commentary box: Mark calls the play, Lena adds analysis (both fictional) ---------- */
+const Booth = {
+  used: new Set(), streak: { who: -1, n: 0 }, lastTalk: 0,
+  reset() { this.used.clear(); this.streak = { who: -1, n: 0 }; this.lastTalk = 0; },
+  one(list) {                                                       // pick a line not used recently
+    const fresh = list.filter(x => x && !this.used.has(x));
+    const c = (fresh.length ? fresh : list.filter(Boolean))[Math.floor(Math.random() * (fresh.length || list.filter(Boolean).length))];
+    if (c) { this.used.add(c); if (this.used.size > 120) this.used.clear(); }
+    return c;
   },
-  game(w, held) { return held ? pick([`${w.name} holds serve.`, `Comfortable hold for ${w.name}.`]) : pick([`Break of serve! ${w.name} breaks.`, `${w.name} breaks, and that could be big.`]); },
-  pressure(s, r, a, b) {
-    if (G.tb) return "";
-    if (b >= 3 && b - a >= 1) return pick([`Break point, ${r.name}.`, `${r.name} has a look at a break here.`]);
-    if (a >= 3 && b >= 3 && a === b && G.fmt === "quick") return `Deciding point. Everything on this one.`;
-    if (a >= 3 && a - b >= 1 && Math.random() < .5) return `Game point, ${s.name}.`;
-    return "";
+  say(lines, opts) { lines = lines.filter(l => l && l[1]); if (!lines.length) return; this.lastTalk = G.time; Sound.talk(lines, opts); },
+  st(p) { return (G.stats && G.stats[p.id]) || {}; },
+  pct(n, d) { return d ? Math.round(100 * n / d) : 0; },
+  surfaceLine() {
+    const s = G.st.surface;
+    return s === "clay" ? this.one(["On clay the ball sits up, so expect long rallies. Patience will be everything.", "Clay tonight. The player who's willing to grind should come out on top."])
+      : s === "grass" ? this.one(["On grass the ball skids through low, so the serve is going to be a real weapon.", "Grass rewards first-strike tennis. Short points, big serves."])
+      : this.one(["It's a true hard court, so clean hitting and good serving get rewarded.", "Hard court tonight. A fair surface, nowhere to hide."]);
+  },
+  intro(a, b) {
+    this.reset();
+    const d = (a.level || 3.5) - (b.level || 3.5), fav = d >= 0 ? a : b, dog = d >= 0 ? b : a;
+    G.holdServeUntil = G.time + 9;                                  // let them finish the intro before the first serve
+    this.say([
+      ["A", this.one([`Hello and welcome to ${G.st.name}. It's ${a.name} against ${b.name}, and what an atmosphere.`,
+                      `Good evening from ${G.st.name}, where ${a.name} takes on ${b.name}.`,
+                      `We're live at ${G.st.name}. ${a.name} versus ${b.name}, and the stands are buzzing.`])],
+      ["B", Math.abs(d) < .25 ? this.one([`On paper, Mark, this is as even as it gets. Both players around ${(a.level || 3.5).toFixed(1)} level.`, `Very evenly matched. The first few service games will tell us a lot.`])
+                              : this.one([`${fav.name} comes in as the favourite, but ${dog.name} has nothing to lose tonight.`, `${fav.name} is rated a little higher, so the pressure is all on that side of the net.`])],
+      ["B", this.surfaceLine()],
+      ["A", this.one(["Players are ready. Here we go.", "Let's get under way.", `${G.p[G.server].name} will serve first.`])],
+    ], { prio: 3, tag: "intro" });
+  },
+  // called once a point is over
+  point(w, l, call, rally, result, heldServe) {
+    const sw = this.st(w), sl = this.st(l);
+    this.streak = this.streak.who === w.idx ? { who: w.idx, n: this.streak.n + 1 } : { who: w.idx, n: 1 };
+    if (result === "match") return this.match(w, l);
+    if (result === "game") return this.game(w, l, heldServe, call, rally);
+    let lines = [];
+    if (call === "Ace") {
+      lines.push(["A", this.one(["Ace!", "Unreturnable. Ace!", "Right on the line. Ace!", `Gone past ${l.name} in a flash!`, "Bang! Ace."])]);
+      if (sw.aces >= 2 && Math.random() < .7) lines.push(["B", this.one([`That's ace number ${sw.aces} for ${w.name}. The serve is really firing.`, `${sw.aces} aces now. ${l.name} just can't read that serve.`])]);
+      else if (Math.random() < .35) lines.push(["B", this.one([`${l.name} didn't even move for that one.`, "Perfect placement, right into the corner."])]);
+    } else if (call === "Double fault") {
+      lines.push(["A", this.one(["Oh, double fault.", "Double fault. A gift.", "Into the tape again. Double fault."])]);
+      if (Math.random() < .6) lines.push(["B", this.one([sl.df >= 2 ? `That's ${sl.df} double faults from ${l.name}. Something to tidy up.` : "", "You can't give away free points like that.", `${l.name} will be annoyed with that one.`])]);
+    } else if (rally >= 8) {
+      lines.push(["A", this.one([`What a rally! ${rally} shots, and ${w.name} takes it!`, `Incredible exchange! ${w.name} wins a ${rally}-shot rally!`, `Oh, that is brilliant tennis! ${w.name} finally wins it!`])]);
+      lines.push(["B", this.one(["Both players running everywhere. Listen to this crowd!", "That's the kind of point that can swing a match.", `You could see ${l.name} tiring at the end of that one.`, "Unbelievable defence, and then the perfect finish."])]);
+    } else if (call === "Net") {
+      if (Math.random() < .7) lines.push(["A", this.one(["Into the net.", "Netted.", `Tape, and it stays on ${l.name}'s side.`])]);
+      if (Math.random() < .3) lines.push(["B", this.one([`${l.name} was just a fraction late on that.`, "Went for a little too much there.", "Needed more height over the net."])]);
+    } else if (call === "Out") {
+      if (Math.random() < .65) lines.push(["A", this.one(["Long.", "Just wide.", "Out, by a whisker.", "That one sails long."])]);
+      if (Math.random() < .25) lines.push(["B", this.one(["So close to the line.", `${l.name} needed a bit more margin there.`])]);
+    } else {
+      if (Math.random() < .6) lines.push(["A", this.one([`Lovely shot from ${w.name}.`, `Clean winner, ${w.name}.`, `${w.name} puts it away.`, `Too good from ${w.name}.`, "Oh, that's gorgeous."])]);
+      if (Math.random() < .25) lines.push(["B", this.one(["Great footwork to set that up.", "Right in the middle of the strings.", `${w.name} saw the gap early.`])]);
+    }
+    if ((this.streak.n === 4 || this.streak.n === 7) && lines.length < 2) lines.push(["B", this.one([`That's ${this.streak.n} points in a row for ${w.name}. Real momentum now.`, `${w.name} has won ${this.streak.n} straight points. ${l.name} needs to stop the run.`])]);
+    this.say(lines, { prio: rally >= 8 || call === "Ace" ? 2 : 1 });
+  },
+  game(w, l, held, call, rally) {
+    const gw = G.games[w.idx], gl = G.games[l.idx];
+    const gm = (n) => `${n} ${n === 1 ? "game" : "games"}`;
+    const score = gw === gl ? `and it's ${gw} all.` : gw > gl ? `and leads ${gm(gw)} to ${gl}.` : `but ${l.name} still leads, ${gm(gl)} to ${gw}.`;
+    const lines = [["A", held ? this.one([`${w.name} holds, ${score}`, `Safely through for ${w.name}, ${score.replace(/^and leads/, "who leads")}`, `Another hold for ${w.name}, ${score.replace(/^and leads/, "who leads")}`])
+                               : this.one([`Break of serve! ${w.name} breaks, ${score}`, `${w.name} breaks, and the crowd love it! ${gw === gl ? `${gw} all.` : gw > gl ? `${w.name} leads ${gm(gw)} to ${gl}.` : `${l.name} still leads, ${gm(gl)} to ${gw}.`}`])]];
+    if (!held) lines.push(["B", this.one(["That could be the moment of the match.", `${l.name} will be disappointed with that service game.`, `Big statement from ${w.name}. Returning really well.`])]);
+    else if (Math.random() < .35) lines.push(["B", this.one([`Good serving from ${w.name}. Hardly any pressure in that game.`, `${w.name} is making this look routine on serve.`])]);
+    this.say(lines, { prio: 2 });
+  },
+  beforeServe(s, r) {                                              // break point, game point, match point
+    if (G.tb) { const a = G.tbPts[s.idx], b = G.tbPts[r.idx];
+      if (Math.max(a, b) >= 6 && Math.abs(a - b) >= 1) { const lead = a > b ? s : r; return this.say([["A", this.one([`Match point in the tiebreak for ${lead.name}!`, `${lead.name} is one point away!`])]], { prio: 3 }); }
+      return; }
+    const a = G.points[s.idx], b = G.points[r.idx];
+    const gamePoint = (x, y) => x >= 3 && x - y >= 1, deciding = a >= 3 && a === b && G.fmt === "quick";
+    const winsMatch = (p) => G.fmt === "quick" ? G.games[p.idx] >= 2 : (G.games[p.idx] >= 5 && G.games[p.idx] + 1 - G.games[1 - p.idx] >= 2);
+    if (deciding) return this.say([["A", "Deciding point. One point for the game."], ["B", this.one(["Nerves of steel needed here.", "This is what it's all about."])]], { prio: 3 });
+    for (const [p, x, y] of [[s, a, b], [r, b, a]]) if (gamePoint(x, y) && winsMatch(p)) {
+      return this.say([["A", this.one([`Match point, ${p.name}!`, `${p.name} is one point from victory.`])], ["B", p === s ? "Just need a first serve here." : `${s.name} has to dig deep.`]], { prio: 3 });
+    }
+    if (gamePoint(b, a)) return this.say([["A", this.one([`Break point, ${r.name}.`, `Big moment. Break point, ${r.name}.`])], Math.random() < .5 ? ["B", `${s.name} really needs a first serve now.`] : null].filter(Boolean), { prio: 2 });
+    if (gamePoint(a, b) && Math.random() < .3) return this.say([["A", `Game point, ${s.name}.`]], { prio: 1 });
+    // a little chat when things are quiet
+    if (G.time - this.lastTalk > 12 && !Sound.speaking() && Math.random() < .35) this.chat();
+  },
+  chat() {
+    const v = G.st.name, s = G.st.surface, [a, b] = G.p, sa = this.st(a), sb = this.st(b);
+    const lead = G.games[0] === G.games[1] ? null : G.games[0] > G.games[1] ? a : b;
+    const pairs = [
+      ["The ball kids have been brilliant today.", "Sharp as anything, Mark. Not a single delay."],
+      [`Great crowd here at ${v}.`, "They know their tennis. You can hear it on every big point."],
+      ["How's your coffee, Lena?", lead ? `Cold, Mark. Like ${lead === a ? b.name : a.name}'s returns in that last game.` : "Cold, Mark. I've been too busy watching this."],
+      ["The umpire has had a quiet one so far.", "That's the sign of a good match. You barely notice them."],
+      s === "clay" ? ["Look at the clay on those shoes.", "They'll be finding it in their socks for a week."]
+        : s === "grass" ? ["The grass is wearing behind the baseline already.", "Footing gets tricky there. Watch out for slips."]
+        : ["You can hear those shoes squeaking from up here.", "That's the sound of good footwork on a hard court."],
+      [`${a.name} or ${b.name}, Lena. Who are you backing?`, lead ? `${lead.name}, for now. But it's far from over.` : "I'm sitting on the fence, Mark. It's too close to call."],
+      ["Lovely evening for tennis.", "Perfect conditions. No wind at all."],
+      [`What's the key for ${(lead && lead === a) ? b.name : a.name} from here?`, "Get more first serves in, and be brave on the second ball."],
+    ];
+    const [x, y] = this.one(pairs.map(p => p.join("|"))).split("|");
+    this.say([["A", x], ["B", y]], { prio: 0 });
   },
   changeover() {
-    const [g0, g1] = G.games, a = G.p[0], b = G.p[1];
-    if (g0 === g1) return pick([`All square at ${g0} games each. Time for a quick break and some music.`, `${g0} all. The players take a seat at the changeover.`]);
-    const lead = g0 > g1 ? a : b;
-    return pick([`${lead.name} leads ${Math.max(g0, g1)} games to ${Math.min(g0, g1)}. Changeover.`, `A short break here, with ${lead.name} in front, ${Math.max(g0, g1)} ${Math.min(g0, g1)}.`]);
+    const [a, b] = G.p, sa = this.st(a), sb = this.st(b), [g0, g1] = G.games;
+    const lead = g0 === g1 ? null : g0 > g1 ? a : b, trail = lead ? (lead === a ? b : a) : null;
+    const first = (x) => this.pct((x.first || 0) - (x.firstMiss || 0), x.first);
+    const facts = [];
+    if (Math.max(sa.aces || 0, sb.aces || 0) >= 2) { const p = (sa.aces || 0) >= (sb.aces || 0) ? a : b; facts.push(`${p.name} has ${this.st(p).aces} aces already. That serve is a real weapon.`); }
+    const e = (x) => (x.net || 0) + (x.out || 0);
+    if (Math.max(e(sa), e(sb)) >= 3) { const p = e(sa) >= e(sb) ? a : b; facts.push(`${p.name} has made ${e(this.st(p))} errors. Too many cheap points going the other way.`); }
+    if (sa.first >= 4) facts.push(`${a.name} is landing ${first(sa)} percent of first serves. ${first(sa) >= 65 ? "That's excellent." : "That needs to come up."}`);
+    if (sb.first >= 4) facts.push(`${b.name} is on ${first(sb)} percent of first serves. ${first(sb) >= 65 ? "Very solid." : "Room to improve there."}`);
+    if ((G.maxRally || 0) >= 6) facts.push(`The longest rally so far was ${G.maxRally} shots. Fantastic defence in that one.`);
+    const lines = [
+      ["A", lead ? this.one([`So ${lead.name} leads ${Math.max(g0, g1)} ${Math.max(g0, g1) === 1 ? "game" : "games"} to ${Math.min(g0, g1)} as we take a short break.`, `Changeover, with ${lead.name} in front, ${Math.max(g0, g1)} ${Math.min(g0, g1)}.`])
+                 : this.one([`${g0} games all, and the players head to their chairs.`, `All square at ${g0} each. Time for a breather.`])],
+      ["B", facts.length ? this.one(facts) : this.one(["It's been a tight, tactical start.", "Very little to separate them so far."])],
+      ["A", trail ? `What would you be telling ${trail.name} right now?` : "What decides it from here, Lena?"],
+      ["B", trail ? this.one([`Be patient. Find ${lead.name}'s backhand, and make that first serve count.`, `Stay aggressive. Take the ball early and don't let ${lead.name} settle.`])
+                  : this.one(["Whoever serves better in the next couple of games, I think.", "Concentration. One loose game could decide this."])],
+    ];
+    this.say(lines, { prio: 3 });
   },
-  match(w, l) { return pick([`${w.name} wins it, ${G.games[w.idx]} games to ${G.games[l.idx]}. What a match at ${G.st.name}!`,
-                            `And that's the match. ${w.name} takes it, ${G.games[w.idx]} ${G.games[l.idx]}.`]); },
+  coach(text) {                                                   // Lena reacts to Omega's coaching tip
+    const t = String(text || "").replace(/\s+/g, " ").trim();
+    if (!t || t.length > 140) return;
+    this.say([["A", "And there's the coaching tip on the screen."], ["B", `"${t.replace(/"/g, "")}" Sensible advice. Let's see if it works.`]], { prio: 2 });
+  },
+  match(w, l) {
+    const gw = G.games[w.idx], gl = G.games[l.idx], sw = this.st(w);
+    this.say([
+      ["A", this.one([`Game, set and match! ${w.name} wins it, ${gw} games to ${gl}!`, `And that's it! ${w.name} takes the match, ${gw} games to ${gl}!`])],
+      ["B", this.one([`A deserved win. ${w.name} played the big points better.`, `Hard luck for ${l.name}, but ${w.name} was just too strong today.`,
+                      sw.servePts ? `${w.name} won ${this.pct(sw.serveWon, sw.servePts)} percent of points on serve. That was the difference.` : ""])],
+      ["A", this.one([`Thanks for joining us at ${G.st.name}. Lena, always a pleasure.`, "What a match. Lena, thank you."])],
+      ["B", this.one(["Thanks, Mark. Goodnight, everyone.", "Pleasure, Mark. See you all next time."])],
+    ], { prio: 3 });
+  },
 };
+// kept so older calls still work
+const Comm = { start: () => "", changeover: () => "", pressure: () => "", point: () => "", game: () => "", match: () => "" };
+// subtitles under the court
+function subtitles(item) {
+  const el = $("subs"); if (!el) return;
+  if (!item || !SET.subs) { el.classList.remove("on"); return; }
+  el.innerHTML = `<b class="${item.who}">${esc(Sound.CAST[item.who] || "")}</b>${esc(item.text)}`; el.classList.add("on");
+}
+setInterval(() => Sound.pump(), 250);                              // resume talk when a point ends
 function endPoint(winner, call) {
   const b = G.ball; b.dead = true; G.phase = "dead"; G.timer = 0; G.next = "point"; G.faults = 0;
   G.excite = Math.min(1, .35 + G.rally * .08);
@@ -1559,8 +1734,7 @@ function endPoint(winner, call) {
   let say = result === "match" ? `Game, set and match, ${w.name}.` : result === "game" ? `Game, ${w.name}.` : scoreCall();
   if (["Out", "Net", "Double fault"].includes(call)) say = `${call}. ${say}`;
   setTimeout(() => Sound.umpire(say), 250);
-  const line = result === "match" ? Comm.match(w, l) : result === "game" ? Comm.game(w, winner === serverBefore) : Comm.point(w, l, call, rally);
-  if (line) setTimeout(() => Sound.commentate(line), 400);
+  setTimeout(() => Booth.point(w, l, call, rally, result, winner === serverBefore), 380);
   if (result === "game" && G.breakPending) { G.next = "break"; G.breakPending = false; }
   showBanner(result === "match" ? `${w.name} wins the match` : result === "game" ? `Game, ${w.name}` : `Point, ${w.name}`, call, result === "match" ? 0 : 1300);
   renderScore();
@@ -1674,7 +1848,7 @@ function step(dt) {
     const s = G.p[currentServer()];
     b.x = s.x + .3 * s.side; b.y = s.y; b.z = 1 + Math.abs(Math.sin(G.time * 3)) * .25;
     G.timer += dt;
-    if (!s.human && G.timer > 1.1) serveBall(s, ["wide", "t", "body"][Math.floor(Math.random() * 3)]);
+    if (!s.human && G.timer > 1.1 && !(G.holdServeUntil && G.time < G.holdServeUntil)) serveBall(s, ["wide", "t", "body"][Math.floor(Math.random() * 3)]);
     return;
   }
   if (G.phase === "dead") {
@@ -1984,7 +2158,7 @@ function playerFromInfo(info, idx, input) {
   return p;
 }
 // Forward sounds and banners from the host to the guest.
-["hit", "bounce", "squeak", "applause", "cheer", "ooh", "umpire", "commentate", "startMusic", "stopMusic", "crowdLevel"].forEach(n => {
+["hit", "bounce", "squeak", "applause", "cheer", "ooh", "umpire", "talk", "startMusic", "stopMusic", "crowdLevel"].forEach(n => {
   const orig = Sound[n].bind(Sound);
   Sound[n] = (...a) => { NET.emit("s:" + n, a); return orig(...a); };
 });
@@ -2110,7 +2284,7 @@ function showCoach(text, tag) {
   $("coachTag").textContent = tag || "Coach Omega";
   $("coachText").textContent = text.length > 260 ? text.slice(0, 257) + "…" : text;
   $("coach").hidden = false;
-  if (G.phase === "break") { $("breakCoach").hidden = false; $("breakCoach").textContent = `Coach Omega: ${text}`; }
+  if (G.phase === "break") { $("breakCoach").hidden = false; $("breakCoach").textContent = `Coach Omega: ${text}`; if (NET.role !== "guest") Booth.coach(text); }
   clearTimeout(coachTimer); coachTimer = setTimeout(() => { $("coach").hidden = true; }, 14000);
 }
 $("coachClose").onclick = () => { $("coach").hidden = true; };
