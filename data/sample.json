@@ -1,0 +1,31 @@
+{
+  "_note": "SAMPLE DATA ONLY. Invented players and courts for the AI Omega Lisbon Buildathon demo. No real player data.",
+  "week": ["sat", "sun"],
+  "players": [
+    {"id": "ana",   "name": "Ana",   "level": 3.5, "area": "Alvalade",          "x": 5.0, "y": 7.0,  "max_travel_km": 5.0, "surface": "clay"},
+    {"id": "joao",  "name": "Joao",  "level": 3.5, "area": "Arroios",           "x": 5.5, "y": 4.0,  "max_travel_km": 6.0, "surface": "hard"},
+    {"id": "sara",  "name": "Sara",  "level": 3.5, "area": "Benfica",           "x": 1.5, "y": 7.0,  "max_travel_km": 7.0, "surface": "clay"},
+    {"id": "kofi",  "name": "Kofi",  "level": 4.0, "area": "Belem",             "x": -2.0, "y": 1.0, "max_travel_km": 4.0, "surface": "hard"},
+    {"id": "mei",   "name": "Mei",   "level": 3.0, "area": "Parque das Nacoes", "x": 9.0, "y": 10.0, "max_travel_km": 8.0, "surface": "hard"},
+    {"id": "lucas", "name": "Lucas", "level": 4.5, "area": "Campo de Ourique",  "x": 2.0, "y": 3.0,  "max_travel_km": 6.0, "surface": "clay"}
+  ],
+  "availability": {
+    "ana":   {"sat": [9, 10, 18, 19], "sun": [10]},
+    "joao":  {"sat": [18, 19],        "sun": [10, 11]},
+    "sara":  {"sat": [18, 19],        "sun": [11]},
+    "kofi":  {"sat": [9, 10],         "sun": [9]},
+    "mei":   {"sat": [18],            "sun": [10, 11]},
+    "lucas": {"sat": [10, 19],        "sun": [9]}
+  },
+  "courts": [
+    {"id": "alvalade", "name": "CT Alvalade (Court 2)",  "x": 5.0, "y": 7.5, "surface": "clay",
+     "open": {"sat": [9, 10, 18, 19], "sun": [10, 11]}},
+    {"id": "estrela",  "name": "Estrela Tennis Club",    "x": 3.0, "y": 2.5, "surface": "hard",
+     "open": {"sat": [10, 18, 19],     "sun": [9, 10, 11]}},
+    {"id": "monsanto", "name": "Monsanto Park Courts",   "x": 0.5, "y": 4.0, "surface": "clay",
+     "open": {"sat": [9, 10, 19],      "sun": [9, 11]}},
+    {"id": "oriente",  "name": "Oriente Riverside Club", "x": 9.0, "y": 9.0, "surface": "hard",
+     "open": {"sat": [18, 19],         "sun": [10, 11]}}
+  ],
+  "played": [["ana", "sara"]]
+}
