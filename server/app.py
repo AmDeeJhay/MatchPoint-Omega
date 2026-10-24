@@ -39,6 +39,7 @@ def fresh_state():
         "taken": [],          # [court, day, hour] slots no longer free
         "unavailable": [],    # [player, day, hour|"all"]
         "agent_connected": False,
+        "ratings": {},        # levels after matches played in the game (set by Omega's MeTTa rules)
     }
 
 
@@ -175,6 +176,10 @@ async def ui_ws(request):
                 await player_unavailable(frame)
             elif kind == "confirm":
                 await confirm(frame)
+            elif kind == "match_result":
+                await match_result(frame)
+            elif kind == "coach":
+                await coach_request(frame)
             elif kind == "reset":
                 keep = S["agent_connected"]
                 S.clear()
@@ -204,6 +209,46 @@ async def player_unavailable(frame):
     name = PLAYERS.get(pid, {}).get("name", pid)
     await to_agent(name, f"Sorry, something came up - I can't play at all on {day} anymore "
                          f"(player id {pid}, day {day}, hour all).")
+
+
+def stats_line(st):
+    if not isinstance(st, dict):
+        return ""
+    parts = []
+    for pid, v in st.items():
+        name = PLAYERS.get(pid, {}).get("name", pid)
+        parts.append(f"{name}: {v.get('won', 0)} points won, {v.get('aces', 0)} aces, {v.get('df', 0)} double faults, "
+                     f"{v.get('net', 0)} into the net, {v.get('out', 0)} out, {v.get('winners', 0)} winners")
+    return "; ".join(parts)
+
+
+async def match_result(frame):
+    w, l = frame.get("winner"), frame.get("loser")
+    if w not in PLAYERS or l not in PLAYERS:
+        return
+    gw, gl = int(frame.get("gw", 0)), int(frame.get("gl", 0))
+    stadium = str(frame.get("stadium", ""))
+    text = (f"MATCH RESULT: {PLAYERS[w]['name']} beat {PLAYERS[l]['name']} {gw}-{gl} at {stadium}. "
+            f"Call tennis-record-result {w} {l} {gw} {gl}. Stats: {stats_line(frame.get('stats'))}.")
+    await to_agent("Match system", text, display=f"Match finished: {PLAYERS[w]['name']} beat {PLAYERS[l]['name']} {gw}-{gl}. Sent to Omega.")
+
+
+async def coach_request(frame):
+    me, opp = frame.get("player"), frame.get("opponent")
+    if me not in PLAYERS or opp not in PLAYERS:
+        return
+    text = (f"Changeover. {PLAYERS[me]['name']} ({me}) vs {PLAYERS[opp]['name']} ({opp}), games {frame.get('score', '')}. "
+            f"Stats: {stats_line(frame.get('stats'))}. Give {PLAYERS[me]['name']} ONE tactical tip, max 20 words.")
+    await to_agent("Coach request", text, display=f"{PLAYERS[me]['name']} asked Omega for a tip at the changeover.")
+
+
+async def api_ratings(request):
+    body = await request.json()
+    for pid, lvl in (body.get("ratings") or {}).items():
+        if pid in PLAYERS:
+            S["ratings"][pid] = round(float(lvl), 1)
+    await broadcast("ratings", S["ratings"])
+    return j("ok")
 
 
 async def confirm(frame):
@@ -366,6 +411,7 @@ def make_app():
         web.post("/api/event", api_event),
         web.post("/api/request_confirmation", api_request_confirmation),
         web.post("/api/book", api_book),
+        web.post("/api/ratings", api_ratings),
         web.static("/static", ROOT / "server" / "static"),
     ])
     return app

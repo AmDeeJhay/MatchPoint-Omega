@@ -12,3 +12,12 @@
 !(add-atom &plugin-tennis (unavailable "joao" "sat" "all"))
 !(println! (tennis-plan "ana"))
 !(println! (tennis-plan "lucas"))
+;; results move levels and are remembered
+!(println! (eff-level "ana" 3.5))
+!(remember-match "ana" "joao")
+!(set-shift "ana" (+ (rating-shift "ana") 0.1))
+!(set-shift "joao" (- (rating-shift "joao") 0.1))
+!(println! (player-level "ana"))
+!(println! (player-level "joao"))
+!(println! (played-before "joao" "ana"))
+!(println! (tennis-plan "ana"))

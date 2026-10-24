@@ -88,6 +88,12 @@ After Omega books a match, press **Play it** (or **Play this match** in the Omeg
 - **Watch mode** plays AI against AI.
 - **Omega panel:** drag it by its header, resize it from the corner, or hide it.
 
+## Omega inside the game
+
+- **Results feed Omega's memory.** When you finish a match, the game sends the result and stats to Omega. Omega calls `tennis-record-result`, which stores `(played winner loser)` and moves both levels by 0.1 (kept within half a level of the profile). The level-fit rule uses these levels, so **Omega's next proposals change with how you actually play**. The AI opponent in the game uses the updated level too.
+- **Coach at changeovers.** At each changeover break, the game sends Omega the match stats (points won, aces, double faults, nets, outs, winners). Omega replies with one tactical tip, shown on court.
+- **Book a rematch** from the end-of-match card asks Omega for the next fair slot.
+
 ## Settings, customisation and online play
 
 - **Settings** (⚙ in the top bar):

@@ -30,21 +30,24 @@
 (= (tn-none $pattern-results) (== () $pattern-results))
 
 ;; ---------- MeTTa rule 1: level fit ----------------------------------
-;; 3 points for the same level, 1 point for half a level apart,
-;; otherwise the pair is not a fit.
+;; 3 points for the same level, 2 when within 0.2, 1 within half a level,
+;; otherwise the pair is not a fit. Levels move as results are recorded.
 
 (= (level-gap $a $b) (tn-abs (- $a $b)))
 
 (= (level-fit $a $b)
    (let $gap (level-gap $a $b)
      (if (< $gap 0.01) 3
-       (if (< $gap 0.51) 1 -1))))
+       (if (< $gap 0.21) 2
+         (if (< $gap 0.51) 1 -1)))))
 
 (= (level-reason $a $b)
    (let $fit (level-fit $a $b)
      (if (== $fit 3)
          (tn-cat ("level " $a " vs " $b " (same level)"))
-         (tn-cat ("level " $a " vs " $b " (half a level apart, still a fair match)")))))
+         (if (== $fit 2)
+             (tn-cat ("level " $a " vs " $b " (very close)"))
+             (tn-cat ("level " $a " vs " $b " (half a level apart, still a fair match)"))))))
 
 ;; ---------- MeTTa rule 2: travel distance ----------------------------
 ;; Each player must be within their OWN max travel. Shorter combined trip
@@ -94,7 +97,23 @@
 (= (tennis-candidate $req)
    (match &plugin-tennis (player $req $rn $rl $rmax $rsurf $rarea)
      (match &plugin-tennis (player $opp $on $ol $omax $osurf $oarea)
-       (tn-pair $req $rl $rmax $rsurf $opp $ol $omax $osurf))))
+       (tn-pair $req (eff-level $req $rl) $rmax $rsurf $opp (eff-level $opp $ol) $omax $osurf))))
+
+;; ---------- memory of results: levels move with match results ----------
+;; (rating player shift) holds how far a player's level has moved from their
+;; profile level after matches played in the game. Clamped to +/- 0.5.
+(= (rating-shift $p)
+   (let $r (collapse (match &plugin-tennis (rating $p $s) $s))
+     (if (== $r ()) 0.0 (car-atom $r))))
+(= (tn-round1 $x) (/ (round-math (* $x 10)) 10.0))
+(= (eff-level $p $base) (tn-round1 (+ $base (rating-shift $p))))
+(= (tn-clamp $x) (if (> $x 0.5) 0.5 (if (< $x -0.5) -0.5 $x)))
+(= (set-shift $p $new)
+   (progn
+     (collapse (match &plugin-tennis (rating $p $s) (remove-atom &plugin-tennis (rating $p $s))))
+     (let $v (tn-clamp $new) (add-atom &plugin-tennis (rating $p $v)))))
+(= (remember-match $w $l)
+   (if (played-before $w $l) () (add-atom &plugin-tennis (played $w $l))))
 
 ;; Rule 1 gate: the pair must be a level fit.
 (= (tn-pair $req $rl $rmax $rsurf $opp $ol $omax $osurf)
@@ -133,7 +152,7 @@
 ;; ---------- explanation ----------------------------------------------
 
 (= (player-name $p) (match &plugin-tennis (player $p $n $l $m $s $a) $n))
-(= (player-level $p) (match &plugin-tennis (player $p $n $l $m $s $a) $l))
+(= (player-level $p) (match &plugin-tennis (player $p $n $l $m $s $a) (eff-level $p $l)))
 (= (player-max $p) (match &plugin-tennis (player $p $n $l $m $s $a) $m))
 (= (player-surface $p) (match &plugin-tennis (player $p $n $l $m $s $a) $s))
 (= (court-name $c) (match &plugin-tennis (court $c $n $s) $n))
@@ -212,6 +231,22 @@
 
 ;; The Python side refuses unless both players confirmed. A successful
 ;; booking is also remembered here, so later plans skip that slot.
+;; Called when a match played in the game ends: "winner loser games_w games_l".
+;; Records the match and moves both levels by 0.1, so future proposals change.
+(= (tennis-record-result $args)
+   (let* (($w (tn-arg $args 0))
+          ($l (tn-arg $args 1))
+          ($gw (tn-arg $args 2))
+          ($gl (tn-arg $args 3)))
+     (progn
+       (remember-match $w $l)
+       (set-shift $w (+ (rating-shift $w) 0.1))
+       (set-shift $l (- (rating-shift $l) 0.1))
+       (py-call (tennis.publish_ratings $w (player-level $w) $l (player-level $l)))
+       (tn-cat ("Recorded in memory: " (player-name $w) " beat " (player-name $l) " " $gw "-" $gl
+                ". Levels now " (player-name $w) " " (player-level $w) ", " (player-name $l) " " (player-level $l)
+                ". Future proposals use these levels and remember this match.")))))
+
 (= (tennis-book $args)
    (let $result (py-call (tennis.book $args))
      (if (== (py-call (tennis.is_booked $result)) yes)
@@ -228,7 +263,8 @@
      (add-skill tennis-player-unavailable "World Tennis: record that a player cannot play a slot (hour may be all), then re-plan" (player_id day hour))
      (add-skill tennis-request-confirmation "World Tennis: ask BOTH players to confirm a proposed match before any booking" (player_a player_b court_id day hour))
      (add-skill tennis-book "World Tennis: make a SIMULATED booking. Only after both players confirmed; refused otherwise" (player_a player_b court_id day hour))
-     (add-prompt-extension tennis_rules "WORLD TENNIS COORDINATOR: you match players for tennis using ONLY the tennis-* skills. Player ids: ana joao sara kofi mei lucas. Court ids: alvalade estrela monsanto oriente. Days: sat sun. Messages arrive as [Name]: text; the name is who is speaking. Hours are numbers like 18. Skill call examples: tennis-propose ana | tennis-court-taken alvalade sat 18 | tennis-player-unavailable joao sat all | tennis-request-confirmation ana joao alvalade sat 19 | tennis-book ana joao alvalade sat 19. Use send to talk to the players. When asked for a match call tennis-propose and explain the BEST option with its reasons. When told about a clash (court taken, player unavailable) record it with tennis-court-taken or tennis-player-unavailable, then call tennis-propose again and explain what changed. Before booking ALWAYS call tennis-request-confirmation and wait for both CONFIRMED messages. Bookings and payments are SIMULATED: say so. Never say a match is booked unless tennis-book returned BOOKED. Send ONE short message per update, addressed to both players, never one copy per player. Do not repeat a message you already sent. Remember each player's preferences and past matches with remember.")
+     (add-skill tennis-record-result "World Tennis: record a finished match from the game and update both levels" (winner_id loser_id winner_games loser_games))
+     (add-prompt-extension tennis_rules "WORLD TENNIS COORDINATOR: you match players for tennis using ONLY the tennis-* skills. Player ids: ana joao sara kofi mei lucas. Court ids: alvalade estrela monsanto oriente. Days: sat sun. Messages arrive as [Name]: text; the name is who is speaking. Hours are numbers like 18. Skill call examples: tennis-propose ana | tennis-court-taken alvalade sat 18 | tennis-player-unavailable joao sat all | tennis-request-confirmation ana joao alvalade sat 19 | tennis-book ana joao alvalade sat 19. Use send to talk to the players. When asked for a match call tennis-propose and explain the BEST option with its reasons. When told about a clash (court taken, player unavailable) record it with tennis-court-taken or tennis-player-unavailable, then call tennis-propose again and explain what changed. Before booking ALWAYS call tennis-request-confirmation and wait for both CONFIRMED messages. Bookings and payments are SIMULATED: say so. Never say a match is booked unless tennis-book returned BOOKED. Send ONE short message per update, addressed to both players, never one copy per player. Do not repeat a message you already sent. When a [Match system] MATCH RESULT message arrives, call tennis-record-result with the ids and games it gives, then send ONE short message with the result, the new levels and one coaching tip for the loser. When a [Coach request] arrives, send ONE tactical tip of at most 20 words for that player, based only on the stats given; do not call other skills for it. Remember each player's preferences and past matches with remember.")
      ()))
 
 ;; ---- BEGIN GENERATED FACTS (scripts/gen_facts.py) ----

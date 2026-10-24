@@ -33,14 +33,16 @@
   }
   .zone { display: flex; align-items: center; gap: 8px; min-width: 0; }
   .zone.setup { justify-content: center; flex-wrap: nowrap; }
-  .zone.setup select { max-width: 170px; }
+  .zone.setup select { max-width: 190px; min-width: 0; flex: 0 1 auto; }
+  .zone.setup .in-settings { display: none !important; }
+  .zone.left, .zone.right { flex: none; }
   @media (max-width: 1440px) { .status span { display: none; } }
   .zone.right { justify-content: flex-end; }
   .zone.right select { height: 34px; border: 1px solid var(--rule); border-radius: 9px; background: #fff; padding: 0 8px; color: var(--ink); max-width: 175px; }
   .vs-sep { color: var(--muted); font-size: 13px; font-weight: 600; }
   .divider { width: 1px; height: 22px; background: var(--rule); margin: 0 4px; }
   .avatar-sm { width: 18px; height: 18px; border-radius: 50%; background: var(--rule); flex: none; }
-  @media (max-width: 1240px) {
+  @media (max-width: 1320px) {
     .bar { grid-template-columns: 1fr auto; }
     .zone.setup { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; flex-wrap: wrap; }
   }
@@ -83,6 +85,7 @@
     font-size: 18px; font-weight: 700; pointer-events: none; max-width: min(90vw, 460px);
   }
   .banner small { display: block; font-size: 13px; font-weight: 400; color: #c9d4e5; margin-top: 4px; }
+  body.touch-ui .keys { display: none !important; }
   .keys {
     position: fixed; left: 16px; bottom: 16px; z-index: 4; background: rgba(13,22,38,.78); color: #dce5f2;
     font-size: 12px; padding: 8px 12px; border-radius: 10px; line-height: 1.7; max-width: 300px;
@@ -152,7 +155,12 @@
 
   /* ---------- play-money predictions ---------- */
   .predict { position: fixed; left: 16px; z-index: 4; width: 240px; background: rgba(13,22,38,.9); color: #fff; border-radius: 12px; padding: 10px 12px; font-size: 13px; }
-  .predict .ph { display: flex; justify-content: space-between; align-items: baseline; }
+  .predict .ph { display: flex; justify-content: space-between; align-items: baseline; width: 100%; background: none; border: 0; color: inherit; padding: 0; cursor: pointer; text-align: left; }
+  .predict.collapsed { width: auto; }
+  .predict.collapsed .note, .predict.collapsed .picks, .predict.collapsed .stakes, .predict.collapsed .res { display: none; }
+  .predict.collapsed .ph { gap: 10px; }
+  .predict.collapsed .chev { display: inline-block; transform: rotate(-90deg); }
+  .menu-btn { display: none; width: 38px; height: 34px; border-radius: 9px; border: 1px solid var(--rule); background: #fff; font-size: 18px; cursor: pointer; }
   .predict .coins { font-weight: 800; color: var(--ball); font-size: 16px; }
   .predict .note { color: #9fb0c8; font-size: 11px; margin: 2px 0 8px; }
   .predict .picks { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
@@ -164,6 +172,28 @@
   .predict .stakes button { flex: 1; border: 1px solid rgba(255,255,255,.2); background: transparent; color: #dce5f2; border-radius: 6px; padding: 3px; font-size: 12px; cursor: pointer; }
   .predict .stakes button[aria-pressed="true"] { background: #fff; color: var(--ink); }
   .predict .res { margin-top: 6px; min-height: 18px; color: #dce5f2; }
+  .ace { position: fixed; left: 50%; top: 40%; z-index: 6; pointer-events: none; text-align: center; color: var(--ball);
+         transform: translate(-50%, -50%); text-shadow: 0 6px 30px rgba(0,0,0,.55); }
+  .ace span { display: block; font-size: clamp(64px, 14vw, 150px); font-weight: 800; font-style: italic; letter-spacing: .04em; font-variation-settings: "wdth" 125; line-height: 1; }
+  .ace small { display: block; color: #fff; font-size: 18px; font-weight: 700; margin-top: 6px; }
+  .ace.play { animation: acePop 1.8s cubic-bezier(.2,.9,.3,1.2) forwards; }
+  @keyframes acePop { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.3) rotate(-8deg); }
+                      18% { opacity: 1; transform: translate(-50%, -50%) scale(1.12) rotate(-3deg); }
+                      30% { transform: translate(-50%, -50%) scale(1) rotate(-3deg); }
+                      80% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -62%) scale(1.04) rotate(-3deg); } }
+  @media (prefers-reduced-motion: reduce) { .ace.play { animation: none; } }
+  .coach { position: fixed; right: 16px; bottom: 84px; z-index: 8; width: min(360px, calc(100vw - 32px)); background: #fff; color: var(--ink);
+           border-radius: 14px; border-left: 5px solid var(--ball); padding: 10px 14px 12px; box-shadow: 0 12px 36px rgba(0,0,0,.3); font-size: 14px; }
+  .coach-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .coach-tag { font-size: 12px; font-weight: 700; color: var(--court); }
+  .coach-head button { border: 0; background: none; cursor: pointer; color: var(--muted); }
+  .bb-coach { grid-column: 1 / -1; background: rgba(255,255,255,.08); border-radius: 10px; padding: 8px 10px; font-size: 13px; }
+  .endcard { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 9; width: min(440px, calc(100vw - 32px));
+             background: #fff; color: var(--ink); border-radius: 18px; padding: 20px; box-shadow: 0 24px 60px rgba(0,0,0,.4); text-align: center; }
+  .end-title { font-size: 24px; font-weight: 800; font-variation-settings: "wdth" 115; }
+  .end-sub { color: var(--muted); margin: 6px 0 16px; font-size: 14px; }
+  .end-btns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  @media (max-width: 720px) { .coach { bottom: 250px; right: 12px; } }
   .booked-pill {
     position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 4; max-width: calc(100vw - 32px);
     background: var(--glass); border: 1px solid var(--rule); border-radius: 999px; padding: 6px 8px 6px 14px;
@@ -254,9 +284,25 @@
   .stats b { color: #fff; font-weight: 600; }
   .select-foot { display: flex; justify-content: flex-end; margin-top: 24px; gap: 10px; flex-wrap: wrap; }
   .select-foot .btn { height: 44px; padding: 0 22px; font-size: 16px; }
+  .select-foot .btn.quiet { background: rgba(255,255,255,.06); color: #fff; border: 1px solid rgba(255,255,255,.3); }
+  .select-foot .btn.quiet:hover { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.55); }
   .btn.ballbtn { background: var(--ball); color: var(--ink); }
   /* ---------- touch controls (phones and tablets) ---------- */
-  .touch { position: fixed; inset: auto 0 0 0; z-index: 7; display: flex; justify-content: space-between; align-items: flex-end; padding: 0 18px 22px; pointer-events: none; }
+  .touch { position: fixed; inset: 0; z-index: 7; pointer-events: none; }
+  .tgroup { position: absolute; pointer-events: auto; touch-action: none; }
+  #moveCtl { left: 18px; bottom: 22px; transform-origin: left bottom; }
+  #actCtl { right: 18px; bottom: 22px; transform-origin: right bottom; }
+  .dpad { display: none; width: 150px; height: 150px; position: relative; }
+  .touch.dpad-mode .dpad { display: block; } .touch.dpad-mode .stick { display: none; }
+  .dpad button { position: absolute; width: 52px; height: 52px; border-radius: 12px; border: 0; background: rgba(255,255,255,.85); font-size: 18px; color: var(--ink); touch-action: none; box-shadow: 0 4px 12px rgba(0,0,0,.3); }
+  .dpad button[data-dir=up] { left: 49px; top: 0; } .dpad button[data-dir=down] { left: 49px; bottom: 0; }
+  .dpad button[data-dir=left] { left: 0; top: 49px; } .dpad button[data-dir=right] { right: 0; top: 49px; }
+  .dpad button.on { background: var(--ball); }
+  .edit-done { display: none; position: absolute; left: 50%; top: 14px; transform: translateX(-50%); pointer-events: auto; height: 44px; }
+  .touch.editing { z-index: 80; background: rgba(8,14,26,.55); pointer-events: auto; }
+  .touch.editing .edit-done { display: block; }
+  .touch.editing .tgroup { outline: 2px dashed var(--ball); outline-offset: 6px; border-radius: 16px; cursor: move; }
+  .touch.editing .tgroup::after { content: "Drag to move"; position: absolute; left: 50%; top: -30px; transform: translateX(-50%); white-space: nowrap; font-size: 12px; color: #fff; background: rgba(13,22,38,.8); padding: 2px 8px; border-radius: 8px; }
   .stick { width: 128px; height: 128px; border-radius: 50%; background: rgba(13,22,38,.45); border: 2px solid rgba(255,255,255,.35); position: relative; pointer-events: auto; touch-action: none; }
   .knob { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; background: rgba(255,255,255,.85); box-shadow: 0 4px 12px rgba(0,0,0,.3); }
   .touch-btns { display: flex; flex-direction: column; align-items: flex-end; gap: 12px; pointer-events: auto; }
@@ -268,14 +314,25 @@
   @media (max-width: 720px) {
     .keys { display: none; }
     .panel { width: calc(100vw - 16px) !important; }
-    .bar { grid-template-columns: 1fr; padding: 8px; gap: 8px; top: 8px; left: 8px; right: 8px; }
+    /* compact bar: brand, Play and a menu button; everything else lives in the menu */
+    .bar { display: flex; flex-wrap: wrap; align-items: center; padding: 6px 8px; gap: 8px; top: 8px; left: 8px; right: 8px; }
+    .zone.left { flex: 1; min-width: 0; }
     .zone.left .status span { display: none; }
-    .zone.setup { grid-column: auto; grid-row: auto; flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; padding-bottom: 2px; }
-    .zone.setup select { max-width: 130px; flex: none; }
-    .zone.right { justify-content: flex-start; flex-wrap: nowrap; }
-    .zone.right .btn { height: 32px; padding: 0 10px; font-size: 13px; }
-    .zone.right .lbl { display: none; }
-    body.touch-ui #pauseBtn { display: none; }                      /* the on-screen Pause button replaces it */
+    .menu-btn { display: block; order: 3; }
+    .zone.right { order: 2; }
+    .zone.right .btn { height: 34px; padding: 0 12px; font-size: 13px; }
+    .zone.right .btn:not(#playBtn) { display: none; }
+    .zone.setup { display: none; order: 4; }
+    body.menu-open .zone.setup { display: flex; flex-direction: column; align-items: stretch; width: 100%; gap: 8px; padding-top: 6px; border-top: 1px solid var(--rule); }
+    body.menu-open .zone.setup select { max-width: none; width: 100%; height: 40px; }
+    body.menu-open .zone.setup .me-chip { justify-content: space-between; height: 40px; }
+    body.menu-open .vs-sep, body.menu-open .divider { display: none; }
+    body.menu-open .zone.right { order: 5; width: 100%; flex-wrap: wrap; }
+    body.menu-open .zone.right .btn:not(#playBtn) { display: inline-flex; align-items: center; flex: 1; justify-content: center; }
+    body.menu-open .zone.right #playBtn { flex-basis: 100%; height: 40px; }
+    body.menu-open.touch-ui #pauseBtn { display: none; }
+    .zone.right .lbl { display: inline; }
+    body.touch-ui:not(.menu-open) #pauseBtn { display: none; }
     .zone.left .brand { font-size: 15px; }
     .score .foot { display: none; }
     .predict { width: 168px; padding: 8px; font-size: 12px; }
@@ -318,14 +375,15 @@
     <div class="brand">MatchPoint <span>Omega</span></div>
     <div class="status" id="status" title="Omega agent connection"><i></i><span>Omega offline</span></div>
   </div>
+  <button class="menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-label="Open menu">☰</button>
   <div class="zone setup">
     <div class="me-chip"><span class="avatar-sm" id="meDot"></span><b id="meName">-</b><button id="changeMe" type="button">Change</button></div>
     <span class="vs-sep">vs</span>
     <select id="oppSel" aria-label="Opponent"></select>
     <span class="divider"></span>
     <select id="stadiumSel" aria-label="Stadium"></select>
-    <select id="fmtSel" aria-label="Match format"><option value="quick">First to 3 games</option><option value="set">Full set</option></select>
-    <select id="modeSel" aria-label="Mode"><option value="play">You play</option><option value="watch">AI vs AI</option></select>
+    <select id="fmtSel" class="in-settings" aria-label="Match format"><option value="quick">First to 3 games</option><option value="set">Full set</option></select>
+    <select id="modeSel" class="in-settings" aria-label="Mode"><option value="play">You play</option><option value="watch">AI vs AI</option></select>
   </div>
   <div class="zone right">
     <button class="btn quiet" id="helpBtn" type="button" title="How to play" aria-label="How to play">?<span class="lbl"> Help</span></button>
@@ -338,17 +396,27 @@
 
 <div class="score" id="score" hidden></div>
 <div class="touch" id="touch" hidden>
-  <div class="stick" id="stick" aria-label="Move"><div class="knob" id="knob"></div></div>
-  <div class="touch-btns">
-    <button class="tbtn small" id="tPause" type="button">Pause</button>
-    <button class="tbtn" id="tHit" type="button">Hit<small>serve / swing</small></button>
+  <div class="tgroup" id="moveCtl" data-ctl="move">
+    <div class="stick" id="stick" aria-label="Move"><div class="knob" id="knob"></div></div>
+    <div class="dpad" id="dpad" aria-label="Move">
+      <button data-dir="up" aria-label="Up">▲</button><button data-dir="left" aria-label="Left">◀</button>
+      <button data-dir="right" aria-label="Right">▶</button><button data-dir="down" aria-label="Down">▼</button>
+    </div>
   </div>
+  <div class="tgroup" id="actCtl" data-ctl="act">
+    <div class="touch-btns">
+      <button class="tbtn small" id="tPause" type="button">Pause</button>
+      <button class="tbtn" id="tHit" type="button">Hit<small>serve / swing</small></button>
+    </div>
+  </div>
+  <button class="btn primary edit-done" id="touchDone" type="button">Done moving controls</button>
 </div>
 <div class="banner" id="banner" hidden></div>
+<div class="ace" id="ace" hidden aria-hidden="true"><span>ACE</span><small id="aceName"></small></div>
 <div class="keys" id="keys"><kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> or <kbd>WASD</kbd> to move. <kbd>Space</kbd> to serve. Hold a direction as you hit to aim. <kbd>P</kbd> to pause. <span class="swing-hint">You swing automatically when the ball is in reach.</span></div>
 <div class="booked-pill" id="bookedPill" hidden></div>
 <div class="predict" id="predict" hidden>
-  <div class="ph"><span>Predict the point</span><span class="coins" id="coins">500</span></div>
+  <button class="ph" id="predToggle" type="button" aria-expanded="true"><span>Predict the point <span class="chev">▾</span></span><span class="coins" id="coins">500</span></button>
   <div class="note">Play coins for fun. They have no cash value.</div>
   <div class="picks" id="picks"></div>
   <div class="stakes" id="stakes"></div>
@@ -366,6 +434,10 @@
       </div>
     </div>
     <div class="modal-body" data-pane="game">
+      <div class="field"><span>Match format</span>
+        <div class="seg" id="sFmt"><button data-v="quick">First to 3 games</button><button data-v="set">Full set</button></div></div>
+      <div class="field"><span>Mode<small>Watch lets two AI players play each other.</small></span>
+        <div class="seg" id="sMode"><button data-v="play">You play</button><button data-v="watch">AI vs AI</button></div></div>
       <div class="field"><span>Game speed<small>Slower makes rallies easier to follow.</small></span>
         <div class="range"><input type="range" id="sSpeed" min="0.6" max="1.6" step="0.1"><output id="oSpeed"></output></div></div>
       <div class="field"><span>Opponent difficulty<small>Added on top of the opponent's own level.</small></span>
@@ -374,6 +446,11 @@
         <div class="seg" id="sBreak"><button data-v="0">Off</button><button data-v="10">10 s</button><button data-v="20">20 s</button><button data-v="60">60 s</button><button data-v="90">90 s</button></div></div>
       <div class="field"><span>Swing<small>Auto hits when the ball is in reach.</small></span>
         <div class="seg" id="sSwing"><button data-v="auto">Automatic</button><button data-v="space">Press Space</button></div></div>
+      <div class="field"><span>Touch controls<small>Phones and tablets.</small></span>
+        <div class="seg" id="sTouch"><button data-v="stick">Joystick</button><button data-v="dpad">Arrow buttons</button></div></div>
+      <div class="field"><span>Touch control size</span><div class="range"><input type="range" id="sTouchSize" min="0.6" max="1.4" step="0.05"><output id="oTouchSize"></output></div></div>
+      <div class="field"><span>Control positions<small>Drag the controls where your thumbs rest.</small></span>
+        <div class="on-row"><button class="btn quiet" id="sTouchMove" type="button">Move controls</button><button class="btn quiet" id="sTouchReset" type="button">Reset positions</button></div></div>
       <div class="field"><span>Point predictions</span><label class="check"><input type="checkbox" id="sPredict"> Show the play-money prediction card</label></div>
     </div>
     <div class="modal-body" data-pane="kit" hidden>
@@ -466,10 +543,25 @@
   </section>
 </div>
 
+<div class="coach" id="coach" hidden role="status" aria-live="polite">
+  <div class="coach-head"><span class="coach-tag" id="coachTag">Coach Omega</span><button type="button" id="coachClose" aria-label="Close">✕</button></div>
+  <div id="coachText"></div>
+</div>
+<div class="endcard" id="endCard" hidden>
+  <div class="end-title" id="endTitle"></div>
+  <div class="end-sub" id="endSub"></div>
+  <div class="end-btns">
+    <button class="btn quiet" id="endClose" type="button">Close</button>
+    <button class="btn quiet" id="endAgain" type="button">Play again</button>
+    <button class="btn primary" id="endRematch" type="button">Book a rematch</button>
+  </div>
+</div>
+
 <div class="breakbox" id="breakBox" hidden>
   <div class="bb-title">Changeover</div>
   <div class="bb-time" id="breakTime">0:20</div>
   <div class="bb-song"><span class="eq"><i></i><i></i><i></i></span><span id="breakSong">Now playing</span></div>
+  <div class="bb-coach" id="breakCoach" hidden></div>
   <button class="btn primary" id="skipBreak" type="button">Skip break</button>
 </div>
 
@@ -504,13 +596,17 @@ const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const DAY = { sat: "Saturday", sun: "Sunday" };
 const when = (d, h) => `${DAY[d] || d} ${String(h).padStart(2, "0")}:00`;
-const player = (id) => (SAMPLE && SAMPLE.players.find(p => p.id === id)) || { id, name: id, level: 3.5, area: "" };
+const player = (id) => {
+  const base = (SAMPLE && SAMPLE.players.find(p => p.id === id)) || { id, name: id, level: 3.5, area: "" };
+  const r = STATE && STATE.ratings && STATE.ratings[id];
+  return r ? { ...base, level: r, baseLevel: base.level } : base;   // levels Omega updated after matches
+};
 const court = (id) => (SAMPLE && SAMPLE.courts.find(c => c.id === id)) || { id, name: id, surface: "" };
 const store = {
   get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
 };
-const SET_DEFAULT = { speed: 1, diff: "normal", breakSecs: 20, swing: "auto", predict: true, racket: "allround",
+const SET_DEFAULT = { touch: { mode: "stick", scale: 1, pos: {} }, speed: 1, diff: "normal", breakSecs: 20, swing: "auto", predict: true, racket: "allround",
   kit: { shirt: "#e3ef4b", shorts: "#ffffff", skin: "#c68b5f", head: "cap", hand: "right" },
   vol: .9, music: .7, crowd: 1, cam: "tv", gfx: "high" };
 let SET = JSON.parse(JSON.stringify(SET_DEFAULT));
@@ -560,7 +656,7 @@ function setupOnce() {
     return `<button class="card" data-id="${p.id}" aria-pressed="false">
       <div class="avatar" style="background:${COLORS[p.id] || "#ddd"}">${esc(p.name[0])}</div>
       <div class="nm">${esc(p.name)}</div>
-      <div class="stats"><span>Level</span><b>${Number(p.level).toFixed(1)}</b>
+      <div class="stats"><span>Level</span><b data-level="${p.id}">${Number(p.level).toFixed(1)}</b>
         <span>Home</span><b>${esc(p.area)}</b><span>Likes</span><b>${esc(p.surface)} courts</b>
         <span>Travels</span><b>up to ${p.max_travel_km} km</b><span>Free</span><b>${esc(free)}</b></div></button>`;
   }).join("");
@@ -609,7 +705,7 @@ function enterCourt() {
   $("meName").textContent = player(ME).name;
   $("meDot").style.background = COLORS[ME] || "#ddd";
   $("oppSel").innerHTML = SAMPLE.players.filter(p => p.id !== ME)
-    .map(p => `<option value="${p.id}">${esc(p.name)} (${Number(p.level).toFixed(1)})</option>`).join("");
+    .map(p => `<option value="${p.id}">${esc(p.name)} (${Number(player(p.id).level).toFixed(1)})</option>`).join("");
   lastPlanKey = null; syncFromPlan(true);
   resetPreview(); renderAll();
 }
@@ -666,8 +762,24 @@ $("compose").onsubmit = (e) => {
 /* =====================================================================
    Omega views: chat log, Match tab, proposal pill
    ===================================================================== */
+let seenAgent = -1, seenRatings = "";
 function renderAll() {
   if (!SAMPLE || !STATE) return;
+  // Omega's replies during a match pop up on court as the coach
+  const agentMsgs = STATE.chat.filter(m => m.role === "agent");
+  if (seenAgent >= 0 && agentMsgs.length > seenAgent && (G.running || !$("endCard").hidden)) showCoach(agentMsgs[agentMsgs.length - 1].text);
+  seenAgent = agentMsgs.length;
+  // levels Omega changed after a match
+  const rk = JSON.stringify(STATE.ratings || {});
+  if (rk !== seenRatings) {
+    if (seenRatings && rk !== "{}") {
+      const parts = Object.entries(STATE.ratings).map(([id, l]) => `${player(id).name} ${Number(l).toFixed(1)}`).join(", ");
+      showCoach(`Omega updated levels: ${parts}. Its next proposals use these.`, "Levels updated");
+    }
+    seenRatings = rk;
+    document.querySelectorAll("[data-level]").forEach(el => el.textContent = Number(player(el.dataset.level).level).toFixed(1));
+    if (ME && $("oppSel").options.length) [...$("oppSel").options].forEach(o => o.textContent = `${player(o.value).name} (${Number(player(o.value).level).toFixed(1)})`);
+  }
   const st = $("status");
   st.classList.toggle("on", STATE.agent_connected);
   st.querySelector("span").textContent = STATE.agent_connected ? "Omega online" : "Omega offline";
@@ -679,7 +791,7 @@ function renderLog() {
   const log = $("log");
   if (!STATE.chat.length) { log.innerHTML = '<p class="empty">Ask Omega for a match this weekend. It picks the opponent, court and time with MeTTa rules.</p>'; return; }
   log.innerHTML = STATE.chat.map(m => {
-    const cls = m.role === "agent" ? "agent" : (m.who === "Club system" ? "sys" : "me");
+    const cls = m.role === "agent" ? "agent" : (["Club system", "Match system", "Coach request"].includes(m.who) ? "sys" : "me");
     const who = cls === "sys" ? "" : `<div class="who">${esc(m.who)}</div>`;
     return `<div class="msg ${cls}">${who}<div class="bubble">${esc(m.text)}</div></div>`;
   }).join("");
@@ -963,10 +1075,13 @@ const Sound = {
    ===================================================================== */
 (function loadSettings() {
   const saved = store.get("mp_settings");
-  if (saved) { SET = { ...SET, ...saved, kit: { ...SET.kit, ...(saved.kit || {}) } }; }
+  if (saved) { SET = { ...SET, ...saved, kit: { ...SET.kit, ...(saved.kit || {}) }, touch: { ...SET.touch, ...(saved.touch || {}) } }; }
+  if (SET.fmt) $("fmtSel").value = SET.fmt;
+  if (SET.mode) $("modeSel").value = SET.mode;
 })();
 function saveSettings() { store.set("mp_settings", SET); applySettings(); }
 function applySettings() {
+  if (typeof layoutTouch === "function") layoutTouch();
   Sound.setVolumes();
   if (window.R3D && R3D.applySettings) R3D.applySettings();
   $("predict").hidden = !(SET.predict && G.running);
@@ -997,6 +1112,12 @@ function renderSettings() {
   segment("sDiff", SET.diff, v => SET.diff = v);
   segment("sBreak", SET.breakSecs, v => SET.breakSecs = Number(v));
   segment("sSwing", SET.swing, v => SET.swing = v);
+  segment("sFmt", $("fmtSel").value, v => { $("fmtSel").value = v; SET.fmt = v; });
+  segment("sMode", $("modeSel").value, v => { $("modeSel").value = v; SET.mode = v; });
+  segment("sTouch", SET.touch.mode, v => SET.touch.mode = v);
+  range("sTouchSize", "oTouchSize", SET.touch.scale, v => Math.round(v * 100) + "%", v => SET.touch.scale = v);
+  $("sTouchMove").onclick = () => { closeSettings(); editTouch(true); };
+  $("sTouchReset").onclick = () => { SET.touch.pos = {}; saveSettings(); };
   $("sPredict").checked = SET.predict; $("sPredict").onchange = () => { SET.predict = $("sPredict").checked; saveSettings(); };
   $("sRacket").innerHTML = Object.entries(RACKETS).map(([k, r]) => `<button class="rk" data-v="${k}" aria-pressed="${k === SET.racket}">
     <b>${esc(r.name)}</b><span class="sub">${esc(r.note)}</span>
@@ -1117,6 +1238,8 @@ function startMatch() {
                      faults: 0, winner: null, rally: 0, phase: "serve", timer: 0 });
   $("playBtn").textContent = "Restart"; $("pauseBtn").disabled = false; $("pauseBtn").textContent = "Pause";
   $("score").hidden = false; $("bookedPill").hidden = true;
+  G.stats = {}; G.p.forEach(p => G.stats[p.id] = { won: 0, aces: 0, df: 0, net: 0, out: 0, winners: 0 });
+  $("endCard").hidden = true;
   Pred.locked = false; Pred.pick = null; $("predRes").textContent = ""; $("predict").hidden = !SET.predict;
   Sound.hush(); Sound.stopMusic(); $("breakBox").hidden = true; G.breakPending = false;
   Sound.startMurmur();
@@ -1128,7 +1251,7 @@ function startMatch() {
 }
 function stopMatch(fromNet) {
   if (NET.role === "host" && !fromNet) NET.send({ t: "end" });
-  G.running = false; G.phase = "idle"; $("predict").hidden = true; Sound.stopMurmur(); Sound.stopMusic(); Sound.hush(); $("breakBox").hidden = true; hideBanner();
+  G.running = false; G.phase = "idle"; $("predict").hidden = true; $("coach").hidden = true; Sound.stopMurmur(); Sound.stopMusic(); Sound.hush(); $("breakBox").hidden = true; hideBanner();
   $("playBtn").textContent = "Play match"; $("pauseBtn").disabled = true; $("score").hidden = true;
   resetPreview(); renderAll();
 }
@@ -1156,6 +1279,7 @@ function startBreak() {
   G.p.forEach(p => { p.tx = 7.0; p.ty = p.side * 2.0; });       // walk to the benches beside the umpire's chair
   Sound.umpire("Time. Changeover.");
   Sound.commentate(Comm.changeover());
+  askCoach();
   const song = Sound.startMusic();
   $("breakSong").textContent = song ? `Now playing: ${song} (generated live)` : "Changeover";
   $("breakBox").hidden = false; Sound.crowdLevel(.09);
@@ -1311,6 +1435,13 @@ function endPoint(winner, call) {
   if (G.rally >= 8 || call === "Ace") Sound.cheer(G.rally); else Sound.applause(G.rally);
   const w = G.p[winner], l = G.p[1 - winner], rally = G.rally, result = awardPoint(winner);
   Pred.resolve(winner);
+  if (call === "Ace") { G.fx = { kind: "ace", x: b.x, y: b.y, side: w.side, name: w.name, t0: G.time }; NET.emit("fx", [G.fx]); aceOverlay(w); }
+  const sw = G.stats && G.stats[w.id], sl = G.stats && G.stats[l.id];
+  if (sw && sl) {
+    sw.won++;
+    if (call === "Ace") sw.aces++; else if (call === "Double fault") sl.df++;
+    else if (call === "Net") sl.net++; else if (call === "Out") sl.out++; else sw.winners++;
+  }
   let say = result === "match" ? `Game, set and match, ${w.name}.` : result === "game" ? `Game, ${w.name}.` : scoreCall();
   if (["Out", "Net", "Double fault"].includes(call)) say = `${call}. ${say}`;
   setTimeout(() => Sound.umpire(say), 250);
@@ -1322,6 +1453,7 @@ function endPoint(winner, call) {
   if (result === "match") {
     G.phase = "over"; Sound.cheer(12); setTimeout(() => Sound.stopMurmur(), 3500);
     $("pauseBtn").disabled = true; $("playBtn").textContent = "Play again";
+    setTimeout(() => matchOver(w, l), 1800);
   }
 }
 function awardPoint(w) {
@@ -1614,10 +1746,16 @@ const NET = {
   myInfo() { return { id: ME, name: player(ME).name, level: player(ME).level, kit: { ...SET.kit }, racket: SET.racket, manual: SET.swing === "space" }; },
   connect(onOpen) {
     if (this.ws && this.ws.readyState === 1) return onOpen();
+    if (this.ws && this.ws.readyState === 0) { this.ws.addEventListener("open", onOpen, { once: true }); return; }
+    renderOnline(null, "Connecting…");
     this.ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/play");
-    this.ws.onopen = onOpen;
+    let opened = false;
+    this.ws.onopen = () => { opened = true; onOpen(); };
     this.ws.onmessage = (e) => this.onMessage(JSON.parse(e.data));
-    this.ws.onclose = () => { if (this.role) { const was = this.role; this.reset(); if (G.running) stopMatch(true); showBanner("Connection lost", was === "guest" ? "You left the online match" : ""); } };
+    this.ws.onclose = () => {
+      if (!opened) { this.ws = null; return renderOnline("Couldn't reach the online server. Restart the web app (python server/app.py) so it has online rooms, then try again."); }
+      if (this.role) { const was = this.role; this.reset(); if (G.running) stopMatch(true); showBanner("Connection lost", was === "guest" ? "You left the online match" : ""); renderOnline(); }
+    };
   },
   send(m) { if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify(m)); },
   emit(name, args) { if (this.role === "host" && G.running) this.ev.push([name, args || []]); },
@@ -1690,6 +1828,7 @@ const NET = {
       if (name.startsWith("s:")) { const fn = Sound[name.slice(2)]; if (fn) fn.apply(Sound, args); }
       else if (name === "ui:banner") showBanner(...args);
       else if (name === "ui:hide") hideBanner();
+      else if (name === "fx") { G.fx = { ...args[0], t0: G.time }; if (args[0].kind === "ace") aceOverlay({ name: args[0].name }); }
       else if (name === "ui:break") { $("breakBox").hidden = !args[0]; if (args[1]) $("breakSong").textContent = args[1]; }
     });
   },
@@ -1706,8 +1845,9 @@ function playerFromInfo(info, idx, input) {
   Sound[n] = (...a) => { NET.emit("s:" + n, a); return orig(...a); };
 });
 
-function renderOnline(error) {
+function renderOnline(error, busy) {
   const el = $("onBody");
+  if (busy) { el.innerHTML = `<p>${esc(busy)}</p>`; return; }
   if (!ME) { el.innerHTML = `<p>Pick your player first, then come back here.</p>`; return; }
   const me = esc(player(ME).name);
   const publicNote = `<p class="on-note">Your opponent needs this page's address. In GitHub Codespaces: open the <b>Ports</b> tab, right-click port 8787, choose <b>Port Visibility → Public</b>, then share the address.</p>`;
@@ -1726,11 +1866,70 @@ function renderOnline(error) {
       <div class="on-row"><button class="btn primary" id="onCreate" type="button">Create a room</button></div>
       <div class="on-row"><input id="onCode" maxlength="4" placeholder="CODE" value="${esc(pre)}" aria-label="Room code"><button class="btn quiet" id="onJoin" type="button">Join room</button></div>${publicNote}`;
     $("onCreate").onclick = () => NET.create();
-    $("onJoin").onclick = () => { const c = $("onCode").value.trim(); if (c.length === 4) NET.join(c); };
+    $("onJoin").onclick = () => { const c = $("onCode").value.trim(); if (c.length === 4) NET.join(c); else renderOnline("Enter the 4-letter room code."); };
   }
   $("onLeave").hidden = !NET.role;
 }
 $("onlineBtn").onclick = () => { renderOnline(); $("online").hidden = false; };
+
+/* ---------- Ace: big animated text on screen, plus a 3D marker where it landed ---------- */
+function aceOverlay(w) {
+  const el = $("ace"); $("aceName").textContent = w.name;
+  el.hidden = false; el.classList.remove("play"); void el.offsetWidth; el.classList.add("play");
+  clearTimeout(aceOverlay.t); aceOverlay.t = setTimeout(() => { el.hidden = true; }, 1900);
+}
+
+/* ---------- Omega in the game: coach tips, results and rematches ---------- */
+let coachTimer = null;
+function showCoach(text, tag) {
+  $("coachTag").textContent = tag || "Coach Omega";
+  $("coachText").textContent = text.length > 260 ? text.slice(0, 257) + "…" : text;
+  $("coach").hidden = false;
+  if (G.phase === "break") { $("breakCoach").hidden = false; $("breakCoach").textContent = `Coach Omega: ${text}`; }
+  clearTimeout(coachTimer); coachTimer = setTimeout(() => { $("coach").hidden = true; }, 14000);
+}
+$("coachClose").onclick = () => { $("coach").hidden = true; };
+const omegaOn = () => STATE && STATE.agent_connected;
+function myPlayer() { return G.p.find(p => p.input === keys); }
+function askCoach() {
+  $("breakCoach").hidden = true;
+  const me = myPlayer(); if (!me || !omegaOn() || NET.role === "guest") return;
+  const opp = G.p[1 - me.idx];
+  send({ type: "coach", player: me.id, opponent: opp.id, score: `${G.games[me.idx]}-${G.games[opp.idx]}`, stats: G.stats });
+  $("breakCoach").hidden = false; $("breakCoach").textContent = "Coach Omega is looking at your stats…";
+}
+function matchOver(w, l) {
+  const me = myPlayer(), gw = G.games[w.idx], gl = G.games[l.idx];
+  const reported = !!me && omegaOn() && NET.role !== "guest";
+  if (reported) send({ type: "match_result", winner: w.id, loser: l.id, gw, gl, stadium: G.st.name, stats: G.stats });
+  $("endTitle").textContent = `${w.name} wins ${gw}–${gl}`;
+  $("endSub").textContent = reported ? "Result sent to Omega. It records the match and updates both players' levels, so its next proposals change."
+    : me ? "Omega is offline, so this result wasn't recorded." : "AI vs AI matches aren't recorded.";
+  $("endRematch").hidden = !me || !omegaOn() || NET.role === "guest";
+  $("endCard").hidden = false; hideBanner();
+}
+$("endClose").onclick = () => { $("endCard").hidden = true; };
+$("endAgain").onclick = () => { $("endCard").hidden = true; $("playBtn").click(); };
+$("endRematch").onclick = () => {
+  const me = myPlayer() || G.p[0], opp = G.p[1 - me.idx];
+  send({ type: "say", who: player(ME).name, text: `Book me a rematch with ${opp.name} this weekend at a fair time.` });
+  $("endCard").hidden = true; stopMatch();
+  if (panel.hidden) $("fab").click();
+  showTab("chat");
+};
+
+/* ---------- phone menu ---------- */
+function setMenu(open) { document.body.classList.toggle("menu-open", open); $("menuBtn").setAttribute("aria-expanded", String(open)); $("menuBtn").textContent = open ? "✕" : "☰"; }
+$("menuBtn").onclick = () => setMenu(!document.body.classList.contains("menu-open"));
+["playBtn", "helpBtn", "onlineBtn", "settingsBtn", "changeMe"].forEach(id => $(id).addEventListener("click", () => setMenu(false)));
+
+/* ---------- prediction card can fold away (folded by default on phones) ---------- */
+(function initPredToggle() {
+  const saved = store.get("mp_predOpen"), open = saved === null ? window.innerWidth >= 720 : saved;
+  const set = (o) => { $("predict").classList.toggle("collapsed", !o); $("predToggle").setAttribute("aria-expanded", String(o)); };
+  set(open);
+  $("predToggle").onclick = () => { const o = $("predict").classList.contains("collapsed"); set(o); store.set("mp_predOpen", o); };
+})();
 
 /* ---------- help guide ---------- */
 function openHelp(tab) {
@@ -1750,7 +1949,24 @@ if (!store.get("mp_helpSeen")) setTimeout(() => openHelp("start"), 900);      //
 /* ---------- touch controls: a joystick to move, a Hit button to serve and swing ---------- */
 const TOUCH = window.matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
 if (TOUCH) document.body.classList.add("touch-ui");
-function showTouch() { $("touch").hidden = !(TOUCH && G.running && G.phase !== "over" && G.p.some(p => p.input === keys)); }
+let touchEditing = false;
+function showTouch() { $("touch").hidden = !(touchEditing || (TOUCH && G.running && G.phase !== "over" && G.p.some(p => p.input === keys))); }
+// size, position and type of the on-screen controls (all from Settings)
+function layoutTouch() {
+  const t = SET.touch, el = $("touch");
+  el.classList.toggle("dpad-mode", t.mode === "dpad");
+  [["moveCtl", "move"], ["actCtl", "act"]].forEach(([id, k]) => {
+    const g = $(id), pos = t.pos && t.pos[k];
+    g.style.transform = `scale(${t.scale})`;
+    if (pos) { g.style.left = (pos.x * innerWidth) + "px"; g.style.top = (pos.y * innerHeight) + "px"; g.style.right = "auto"; g.style.bottom = "auto"; g.style.transformOrigin = "left top"; }
+    else { g.style.left = g.style.top = g.style.right = g.style.bottom = g.style.transformOrigin = ""; }
+  });
+}
+function editTouch(on) {
+  touchEditing = on; $("touch").classList.toggle("editing", on); showTouch();
+  if (on && G.running && !G.paused && NET.role !== "guest") togglePause();
+}
+window.addEventListener("resize", () => layoutTouch());
 (function initTouch() {
   const stick = $("stick"), knob = $("knob"); let id = null;
   const setKeys = (dx, dy) => {
@@ -1761,11 +1977,36 @@ function showTouch() { $("touch").hidden = !(TOUCH && G.running && G.phase !== "
     if (NET.role === "guest") NET.sendInput();
   };
   const centre = () => { const b = stick.getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; };
-  stick.addEventListener("pointerdown", (e) => { id = e.pointerId; try { stick.setPointerCapture(id); } catch {} const [cx, cy] = centre(); setKeys(e.clientX - cx, e.clientY - cy); e.preventDefault(); });
+  stick.addEventListener("pointerdown", (e) => { if (touchEditing) return; id = e.pointerId; try { stick.setPointerCapture(id); } catch {} const [cx, cy] = centre(); setKeys(e.clientX - cx, e.clientY - cy); e.preventDefault(); });
   stick.addEventListener("pointermove", (e) => { if (e.pointerId !== id) return; const [cx, cy] = centre(); setKeys(e.clientX - cx, e.clientY - cy); });
   const end = (e) => { if (e.pointerId !== id) return; id = null; knob.style.transform = ""; setKeys(0, 0); };
   stick.addEventListener("pointerup", end); stick.addEventListener("pointercancel", end);
-  $("tHit").addEventListener("pointerdown", (e) => { e.preventDefault(); Sound.init(); pressAction(); });
+  $("tHit").addEventListener("pointerdown", (e) => { if (touchEditing) return; e.preventDefault(); Sound.init(); pressAction(); });
+  // arrow buttons: hold to move, several at once for diagonals
+  $("dpad").querySelectorAll("button").forEach(b => {
+    const set = (v) => { if (touchEditing) return; keys[b.dataset.dir] = v; b.classList.toggle("on", v); if (NET.role === "guest") NET.sendInput(); };
+    b.addEventListener("pointerdown", (e) => { e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch {} set(true); });
+    ["pointerup", "pointercancel", "lostpointercapture"].forEach(ev => b.addEventListener(ev, () => set(false)));
+  });
+  // drag the control groups while "Move controls" is on
+  document.querySelectorAll(".tgroup").forEach(g => {
+    let d = null;
+    g.addEventListener("pointerdown", (e) => {
+      if (!touchEditing) return; e.preventDefault(); e.stopPropagation();
+      const r = g.getBoundingClientRect(); d = { dx: e.clientX - r.left, dy: e.clientY - r.top, id: e.pointerId };
+      try { g.setPointerCapture(e.pointerId); } catch {}
+    }, true);
+    g.addEventListener("pointermove", (e) => {
+      if (!d || e.pointerId !== d.id) return;
+      const r = g.getBoundingClientRect();
+      const x = Math.min(innerWidth - r.width, Math.max(0, e.clientX - d.dx)), y = Math.min(innerHeight - r.height, Math.max(0, e.clientY - d.dy));
+      SET.touch.pos = { ...(SET.touch.pos || {}), [g.dataset.ctl]: { x: x / innerWidth, y: y / innerHeight } };
+      layoutTouch();
+    });
+    g.addEventListener("pointerup", () => { if (d) { d = null; store.set("mp_settings", SET); } });
+  });
+  $("touchDone").onclick = () => { editTouch(false); store.set("mp_settings", SET); };
+  layoutTouch();
   $("tPause").onclick = () => { if (NET.role !== "guest") togglePause(); };
   setInterval(showTouch, 400);
 })();
@@ -2055,6 +2296,27 @@ if (THREE) {
     if (!G.running) { spare = null; kids.forEach(k => { k.state = "home"; }); }
   }
 
+  // ---------- Ace marker: big 3D letters rise from the spot where the serve landed ----------
+  const aceTex = (() => { const c = document.createElement("canvas"); c.width = 512; c.height = 200; const x = c.getContext("2d");
+    x.font = "italic 800 150px Archivo, system-ui, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle";
+    x.lineWidth = 12; x.strokeStyle = "rgba(13,22,38,.85)"; x.strokeText("ACE", 256, 104); x.fillStyle = "#e3ef4b"; x.fillText("ACE", 256, 104);
+    return new THREE.CanvasTexture(c); })();
+  const aceSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: aceTex, transparent: true, depthTest: false }));
+  aceSprite.renderOrder = 20; aceSprite.visible = false; scene.add(aceSprite);
+  const aceRing = new THREE.Mesh(new THREE.RingGeometry(.2, .32, 40), new THREE.MeshBasicMaterial({ color: 0xe3ef4b, transparent: true, side: THREE.DoubleSide }));
+  aceRing.rotation.x = -Math.PI / 2; aceRing.visible = false; scene.add(aceRing);
+  function updateFx() {
+    const f = G.fx, age = f ? G.time - f.t0 : 99;
+    const on = f && f.kind === "ace" && age < 2.2;
+    aceSprite.visible = aceRing.visible = !!on;
+    if (!on) return;
+    const k = Math.min(1, age / .35), fade = age > 1.6 ? 1 - (age - 1.6) / .6 : 1;
+    aceSprite.position.set(f.x, .6 + k * 1.6, f.y);
+    const sc = 1.2 + k * 2.2; aceSprite.scale.set(sc * 2.5, sc, 1);
+    aceSprite.material.opacity = Math.max(0, fade);
+    aceRing.position.set(f.x, .02, f.y); aceRing.scale.setScalar(1 + age * 6); aceRing.material.opacity = Math.max(0, .9 - age * .45);
+  }
+
   // ---------- ball and its shadow ----------
   const ball = new THREE.Mesh(new THREE.SphereGeometry(.1, 20, 14), new THREE.MeshStandardMaterial({ color: 0xe3ef4b, emissive: 0x4a5200, roughness: .6 }));
   ball.castShadow = true; scene.add(ball);
@@ -2097,6 +2359,7 @@ if (THREE) {
         if (G.phase === "break") f.g.rotation.y = -Math.PI / 2;      // sitting out the changeover, facing the court
       });
       updateKids(dt);
+      updateFx();
       const b = G.ball;
       ball.position.set(b.x, Math.max(.1, b.z + .1), b.y);
       ballShadow.position.set(b.x, .008, b.y); ballShadow.visible = G.p.length > 0;

@@ -99,6 +99,11 @@ def request_confirmation(args):
     return err or _post("/api/request_confirmation", payload)
 
 
+def publish_ratings(w, wl, l, ll):
+    _post("/api/ratings", {"ratings": {_s(w): float(_s(wl)), _s(l): float(_s(ll))}})
+    return "published"
+
+
 def is_booked(result):
     return "yes" if _s(result).startswith("BOOKED") else "no"
 
