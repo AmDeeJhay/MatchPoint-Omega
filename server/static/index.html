@@ -440,7 +440,7 @@
         <div class="seg" id="sMode"><button data-v="play">You play</button><button data-v="watch">AI vs AI</button></div></div>
       <div class="field"><span>Game speed<small>Slower makes rallies easier to follow.</small></span>
         <div class="range"><input type="range" id="sSpeed" min="0.6" max="1.6" step="0.1"><output id="oSpeed"></output></div></div>
-      <div class="field"><span>Opponent difficulty<small>Added on top of the opponent's own level.</small></span>
+      <div class="field"><span>Opponent difficulty<small>Changes how fast the opponent moves, how accurate and hard they hit, and how often they miss. Applies straight away.</small></span>
         <div class="seg" id="sDiff"><button data-v="easy">Easy</button><button data-v="normal">Normal</button><button data-v="hard">Hard</button><button data-v="pro">Pro</button></div></div>
       <div class="field"><span>Changeover break<small>Real matches rest 90 seconds.</small></span>
         <div class="seg" id="sBreak"><button data-v="0">Off</button><button data-v="10">10 s</button><button data-v="20">20 s</button><button data-v="60">60 s</button><button data-v="90">90 s</button></div></div>
@@ -617,6 +617,14 @@ const RACKETS = {
   spin:     { name: "Spin Master 100", power: 1.0, control: 1.0, spin: 1.3, color: "#2e7d4f", note: "Safer over the net" },
 };
 const DIFF = { easy: -.9, normal: 0, hard: .6, pro: 1.2 };
+// How the AI opponent plays at each difficulty. Read live, so a change in Settings applies straight away.
+const AI_PROFILE = {
+  easy:   { spd: .70, react: .20, err: 1.9, aim: .55, miss: .22, pace: .85 },
+  normal: { spd: 1.0, react: 0,   err: 1.0, aim: 1.0, miss: .05, pace: 1.0 },
+  hard:   { spd: 1.15, react: -.05, err: .65, aim: 1.15, miss: .01, pace: 1.08 },
+  pro:    { spd: 1.32, react: -.09, err: .42, aim: 1.3, miss: 0,  pace: 1.16 },
+};
+const aiProf = (p) => (p && p.idx === 0) ? AI_PROFILE.normal : (AI_PROFILE[SET.diff] || AI_PROFILE.normal);   // only the opponent changes
 const SHIRTS = ["#e3ef4b", "#ffffff", "#1d4f91", "#c8553d", "#2e7d4f", "#7d3c98", "#14213d", "#ff9e7a"];
 const SHORTS = ["#ffffff", "#14213d", "#1d4f91", "#2b2b2b", "#c8553d", "#e9e3c9"];
 const SKINS = ["#f1c9a5", "#e0ac7e", "#c68b5f", "#8d5a3b", "#5b3a26"];
@@ -1213,7 +1221,7 @@ function aiKit(id) {
 }
 function makePlayer(id, idx, human, mine) {
   const pr = player(id), base = Number(pr.level) || 3.5;
-  const lvl = human ? base : base + (DIFF[SET.diff] || 0);
+  const lvl = base;                                              // difficulty is applied live through aiProf()
   const kit = mine ? { ...SET.kit } : aiKit(id);
   return { id, name: pr.name, level: lvl, idx, human, side: idx === 0 ? 1 : -1, x: 0, y: idx === 0 ? 12.3 : -12.3,
            tx: 0, ty: 0, speed: 5.2 + (lvl - 3) * .7, cd: 0, react: 0, swingAnim: 0, color: kit.shirt, kit,
@@ -1341,13 +1349,14 @@ function serveBall(p, aim) {
   const second = G.faults > 0, skill = p.level - 3, rk = p.racket || RACKETS.allround;
   let tx = boxX * (aim === "wide" ? 3.4 : aim === "t" ? .55 : 2.0);
   let ty = -p.side * (C.SL - .9);
-  const sd = (p.human ? .38 / rk.control : .62 - skill * .12) * (second ? .55 : 1.15);
+  const sd = (p.human ? .38 / rk.control : (.62 - skill * .12) * aiProf(p).err) * (second ? .55 : 1.15);
   tx += rnd(sd); ty += rnd(sd * .9);
   b.x = p.x; b.y = p.y;
-  launch(tx, ty, ((second ? 17 : 22) + skill * 1.5) * rk.power, 2.65, (second ? 1.15 : 1.0 + rnd(.09)) + (rk.spin - 1) * .4);
+  launch(tx, ty, ((second ? 17 : 22) + skill * 1.5) * rk.power * (p.human ? 1 : aiProf(p).pace), 2.65, (second ? 1.15 : 1.0 + rnd(.09)) + (rk.spin - 1) * .4);
   b.last = p.idx; b.bounces = 0; b.serve = true;
   p.swingAnim = .25; Sound.hit(); G.phase = "rally"; hideBanner();
   Pred.serveStruck(); G.events && G.events.push("hit");
+  const rcv = G.p[1 - p.idx]; rcv.willMiss = !rcv.human && Math.random() < aiProf(rcv).miss;
 }
 function strike(p) {
   const b = G.ball, opp = G.p[1 - p.idx], skill = p.level - 3, rk = p.racket || RACKETS.allround;
@@ -1360,16 +1369,19 @@ function strike(p) {
     ty = -p.side * (v > 0 ? 10.4 : v < 0 ? 7.2 : 9.0);
   } else {
     const away = opp.x > 0 ? -1 : 1;                             // aim away from the opponent
-    tx = away * (1.2 + Math.random() * 2.2);
-    ty = -p.side * (7.6 + Math.random() * 3);
+    const pr = aiProf(p);
+    tx = away * Math.min(3.7, (1.2 + Math.random() * 2.2) * pr.aim);
+    ty = -p.side * Math.min(10.9, (7.6 + Math.random() * 3) * (.9 + .1 * pr.aim));
   }
-  const sd = p.human ? .5 / rk.control : .78 - skill * .2;
+  const sd = p.human ? .5 / rk.control : (.78 - skill * .2) * aiProf(p).err;
   tx += rnd(sd); ty += rnd(sd);
   const z0 = Math.min(2.2, Math.max(.35, b.z));
-  launch(tx, ty, (15 + skill * 2 + Math.random() * 3) * rk.power, z0, 1.12 + (rk.spin - 1) * .5 + rnd(p.human ? .06 : .1 - skill * .03));
+  launch(tx, ty, (15 + skill * 2 + Math.random() * 3) * rk.power * (p.human ? 1 : aiProf(p).pace), z0, 1.12 + (rk.spin - 1) * .5 + rnd(p.human ? .06 : .1 - skill * .03));
   b.last = p.idx; b.bounces = 0; b.serve = false;
   p.cd = .45; p.swingAnim = .25; G.rally++; Sound.hit();
-  G.p[1 - p.idx].react = .14 + Math.random() * .1;
+  const o = G.p[1 - p.idx];
+  o.react = Math.max(.03, .14 + Math.random() * .1 + (o.human ? 0 : aiProf(o).react));
+  o.willMiss = !o.human && Math.random() < aiProf(o).miss;
 }
 
 // ---------- rules ----------
@@ -1544,7 +1556,7 @@ function step(dt) {
       p.x += mx / n * 6.2 * dt; p.y += my / n * 6.2 * dt;
     } else if (!p.human) {
       if (G.phase === "rally") aiThink(p, dt);
-      const dx = p.tx - p.x, dy = p.ty - p.y, d = Math.hypot(dx, dy), mv = Math.min(d, p.speed * dt);
+      const dx = p.tx - p.x, dy = p.ty - p.y, d = Math.hypot(dx, dy), mv = Math.min(d, p.speed * aiProf(p).spd * dt);
       if (d > .02) { p.x += dx / d * mv; p.y += dy / d * mv; }
     }
     p.x = Math.max(-7.5, Math.min(7.5, p.x));
@@ -1598,7 +1610,7 @@ function step(dt) {
     if (b.z <= 0 && b.vz === 0) { const f = Math.max(0, 1 - 1.6 * h); b.vx *= f; b.vy *= f; }   // rolling ball slows down
     if (G.phase === "over") return;
   }
-  if (!b.dead && G.phase === "rally" && (Math.abs(b.y) > 19 || Math.abs(b.x) > 11)) endPoint(b.bounces ? b.last : 1 - b.last, b.bounces ? "Winner" : "Out");
+  if (!b.dead && G.phase === "rally" && (Math.abs(b.y) > 19 || Math.abs(b.x) > 11)) endPoint(b.bounces ? b.last : 1 - b.last, b.bounces ? (b.serve ? "Ace" : G.rally > 4 ? "What a rally" : "Winner") : "Out");
 
   if (G.phase === "rally" && !b.dead) {                          // hitting
     G.p.forEach(p => {
@@ -1607,6 +1619,7 @@ function step(dt) {
       if (b.serve && b.bounces === 0) return;                   // a serve must bounce before the return
       if (b.bounces > 1 || b.z > 2.5) return;
       if (Math.hypot(b.x - p.x, b.y - p.y) > C.REACH) return;
+      if (!p.human && p.willMiss) return;                       // easier opponents sometimes mistime it
       if (p.human && (p.manual ?? SET.swing === "space") && G.time - p.swingAt > .35) return;   // manual swing: Space
       strike(p);
     });
