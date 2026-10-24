@@ -42,10 +42,6 @@
   .vs-sep { color: var(--muted); font-size: 13px; font-weight: 600; }
   .divider { width: 1px; height: 22px; background: var(--rule); margin: 0 4px; }
   .avatar-sm { width: 18px; height: 18px; border-radius: 50%; background: var(--rule); flex: none; }
-  @media (max-width: 1320px) {
-    .bar { grid-template-columns: 1fr auto; }
-    .zone.setup { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; flex-wrap: wrap; }
-  }
   .brand { font-weight: 800; font-size: 17px; font-variation-settings: "wdth" 118; margin: 0 6px; white-space: nowrap; }
   .brand span { color: var(--court); }
   .bar label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
@@ -191,8 +187,50 @@
   .endcard { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 9; width: min(440px, calc(100vw - 32px));
              background: #fff; color: var(--ink); border-radius: 18px; padding: 20px; box-shadow: 0 24px 60px rgba(0,0,0,.4); text-align: center; }
   .end-title { font-size: 24px; font-weight: 800; font-variation-settings: "wdth" 115; }
+  .endcard { width: min(560px, calc(100vw - 24px)); max-height: calc(100vh - 90px); overflow: auto; z-index: 40; }
+  .end-kicker { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .end-score { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; margin: 14px 0 6px; }
+  .end-score .who { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 16px; min-width: 0; }
+  .end-score .who.r { justify-content: flex-end; }
+  .end-score .who i { width: 14px; height: 14px; border-radius: 50%; flex: none; box-shadow: 0 0 0 2px #fff, 0 0 0 3px var(--rule); }
+  .end-score .who span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .end-score .big { font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+  .end-score .big b { color: var(--court); }
+  .end-stats { display: grid; gap: 10px; margin: 14px 0 12px; text-align: left; }
+  .st-row { display: grid; grid-template-columns: 44px 1fr 44px; gap: 10px; align-items: center; }
+  .st-row .v { font-weight: 700; font-variant-numeric: tabular-nums; font-size: 15px; }
+  .st-row .v.r { text-align: right; }
+  .st-row .mid { display: grid; gap: 4px; }
+  .st-row .lbl { text-align: center; font-size: 12px; color: var(--muted); font-weight: 600; }
+  .st-row .bars { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .st-row .sbar { height: 7px; background: var(--mist); border-radius: 4px; overflow: hidden; display: flex; }
+  .st-row .sbar.l { justify-content: flex-end; }
+  .st-row .sbar i { display: block; height: 100%; border-radius: 4px; transition: width .9s cubic-bezier(.2,.8,.2,1); width: 0; }
+  .st-row .sbar i:not(.lead) { opacity: .45; }
+  .st-single { text-align: center; font-size: 13px; color: var(--muted); }
+  .st-single b { color: var(--ink); }
+  .file-btn { display: inline-flex; align-items: center; }
+  .muted-note { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .end-song { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .end-song::before { content: "♪ "; color: var(--court); }
   .end-sub { color: var(--muted); margin: 6px 0 16px; font-size: 14px; }
   .end-btns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  /* compact top bar: sized to its content, one row on laptops */
+  @media (min-width: 721px) {
+    .bar { left: 50%; right: auto; transform: translateX(-50%); width: max-content; max-width: calc(100% - 24px);
+           grid-template-columns: auto auto auto; gap: 10px; padding: 5px 6px; border-radius: 12px; }
+    .bar .btn, .bar select, .bar .me-chip { height: 30px; font-size: 13px; }
+    .bar .btn { padding: 0 10px; border-radius: 8px; }
+    .bar select { max-width: 150px; padding: 0 6px; border-radius: 8px; }
+    .bar .me-chip button { height: 22px; font-size: 11px; padding: 0 6px; }
+    .bar .brand { font-size: 15px; margin: 0 4px; }
+    .zone.setup select#stadiumSel { max-width: 170px; }
+  }
+  @media (min-width: 721px) and (max-width: 1500px) { .zone.right .lbl { display: none; } }
+  @media (max-width: 1080px) {
+    .bar { grid-template-columns: 1fr auto; width: auto; left: 12px; right: 12px; transform: none; }
+    .zone.setup { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; flex-wrap: wrap; }
+  }
   @media (max-width: 720px) { .coach { bottom: 250px; right: 12px; } }
   .booked-pill {
     position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 4; max-width: calc(100vw - 32px);
@@ -466,6 +504,9 @@
         <div class="seg" id="sSound"><button data-v="all">Commentary on</button><button data-v="nocomm">Sound only</button><button data-v="off">Muted</button></div></div>
       <div class="field"><span>Master volume</span><div class="range"><input type="range" id="sVol" min="0" max="1" step="0.05"><output id="oVol"></output></div></div>
       <div class="field"><span>Music volume</span><div class="range"><input type="range" id="sMusic" min="0" max="1" step="0.05"><output id="oMusic"></output></div></div>
+      <div class="field"><span>Your own music<small>Pick songs you own from your device. They play at changeovers and on the match stats screen. They stay on this device and are never uploaded.</small></span>
+        <div><div class="on-row"><label class="btn quiet file-btn">Choose songs<input type="file" id="sSongs" accept="audio/*" multiple hidden></label><button class="btn quiet" id="sSongsClear" type="button">Use built-in music</button></div>
+        <div class="muted-note" id="sSongsNote"></div></div></div>
       <div class="field"><span>Crowd volume</span><div class="range"><input type="range" id="sCrowd" min="0" max="1.5" step="0.05"><output id="oCrowd"></output></div></div>
       <div class="field"><span>Camera<small>C switches camera during play.</small></span>
         <div class="seg" id="sCam"><button data-v="tv">TV</button><button data-v="follow">Behind player</button><button data-v="top">Overhead</button></div></div>
@@ -548,7 +589,11 @@
   <div id="coachText"></div>
 </div>
 <div class="endcard" id="endCard" hidden>
+  <div class="end-kicker" id="endKicker">Match stats</div>
   <div class="end-title" id="endTitle"></div>
+  <div class="end-score" id="endScore"></div>
+  <div class="end-stats" id="endStats"></div>
+  <div class="end-song" id="endSong" hidden></div>
   <div class="end-sub" id="endSub"></div>
   <div class="end-btns">
     <button class="btn quiet" id="endClose" type="button">Close</button>
@@ -1024,7 +1069,9 @@ const Sound = {
     { name: "Changeover Groove", bpm: 104, chords: [[53, 57, 60, 64], [52, 55, 59, 62], [50, 53, 57, 60], [48, 52, 55, 59]] },
     { name: "Clay Court Sunset", bpm: 84, chords: [[51, 55, 58, 62], [48, 51, 55, 58], [44, 48, 51, 55], [46, 50, 53, 56]] },
   ],
+  userSongs: [],                                                 // the player's own files (blobs), kept in this browser only
   startMusic() {
+    if (this.userSongs.length && !this.music) return this.startUserSong();
     if (!this.ctx || this.music) return null;
     const tr = this.TRACKS[Math.floor(Math.random() * this.TRACKS.length)];
     const out = this.ctx.createGain(); out.gain.value = .0001; out.connect(this.master);
@@ -1060,15 +1107,26 @@ const Sound = {
     }, 50);
     this.music = m; return tr.name;
   },
+  startUserSong() {
+    const s = this.userSongs[Math.floor(Math.random() * this.userSongs.length)];
+    const url = URL.createObjectURL(s.blob), a = new Audio(url);
+    a.loop = true; a.volume = 0; a.play().catch(() => {});
+    const target = () => Math.min(1, (this.on ? SET.vol : 0) * SET.music);
+    let v = 0; const fade = setInterval(() => { v = Math.min(target(), v + .05); a.volume = v; if (v >= target()) clearInterval(fade); }, 80);
+    this.music = { audio: a, url, fade, user: true, out: { gain: { set value(x) { a.volume = Math.min(1, x / .32 * (SET.vol || 0)); } } } };
+    return s.name.replace(/\.[a-z0-9]+$/i, "");
+  },
   stopMusic() {
     const m = this.music; if (!m) return; this.music = null;
+    if (m.user) { clearInterval(m.fade); const a = m.audio; const f = setInterval(() => { a.volume = Math.max(0, a.volume - .08); if (a.volume <= 0) { clearInterval(f); a.pause(); URL.revokeObjectURL(m.url); } }, 60); return; }
     const t = this.ctx.currentTime; m.out.gain.cancelScheduledValues(t); m.out.gain.setValueAtTime(m.out.gain.value, t); m.out.gain.linearRampToValueAtTime(.0001, t + .8);
     setTimeout(() => { clearInterval(m.timer); try { m.out.disconnect(); } catch {} }, 900);
   },
   setVolumes() {
     if (this.master) this.master.gain.value = this.on ? SET.vol : 0;
     if (this.murmurGain) this.murmurGain.gain.value = .05 * SET.crowd;
-    if (this.music) this.music.out.gain.value = .32 * SET.music;
+    if (this.music && this.music.user) this.music.audio.volume = Math.min(1, (this.on ? SET.vol : 0) * SET.music);
+    else if (this.music) this.music.out.gain.value = .32 * SET.music;
   },
   setMode(mode) {
     this.on = mode !== "off"; this.comm = mode === "all";
@@ -1246,7 +1304,8 @@ function startMatch() {
                      faults: 0, winner: null, rally: 0, phase: "serve", timer: 0 });
   $("playBtn").textContent = "Restart"; $("pauseBtn").disabled = false; $("pauseBtn").textContent = "Pause";
   $("score").hidden = false; $("bookedPill").hidden = true;
-  G.stats = {}; G.p.forEach(p => G.stats[p.id] = { won: 0, aces: 0, df: 0, net: 0, out: 0, winners: 0 });
+  G.stats = {}; G.p.forEach(p => G.stats[p.id] = { won: 0, aces: 0, df: 0, net: 0, out: 0, winners: 0, first: 0, firstMiss: 0, servePts: 0, serveWon: 0 });
+  G.maxRally = 0;
   $("endCard").hidden = true;
   Pred.locked = false; Pred.pick = null; $("predRes").textContent = ""; $("predict").hidden = !SET.predict;
   Sound.hush(); Sound.stopMusic(); $("breakBox").hidden = true; G.breakPending = false;
@@ -1269,10 +1328,12 @@ function togglePause() {
   $("pauseBtn").textContent = G.paused ? "Resume" : "Pause";
   if (G.paused) {
     Sound.stopMurmur(); Sound.hush();
-    if (Sound.music && Sound.ctx) Sound.ctx.suspend();
+    if (Sound.music && Sound.music.user) Sound.music.audio.pause();
+    else if (Sound.music && Sound.ctx) Sound.ctx.suspend();
     showBanner("Paused", "Press P or Resume to continue");
   } else {
     if (Sound.ctx) Sound.ctx.resume();
+    if (Sound.music && Sound.music.user) Sound.music.audio.play().catch(() => {});
     Sound.startMurmur(); hideBanner();
   }
 }
@@ -1354,6 +1415,7 @@ function serveBall(p, aim) {
   b.x = p.x; b.y = p.y;
   launch(tx, ty, ((second ? 17 : 22) + skill * 1.5) * rk.power * (p.human ? 1 : aiProf(p).pace), 2.65, (second ? 1.15 : 1.0 + rnd(.09)) + (rk.spin - 1) * .4);
   b.last = p.idx; b.bounces = 0; b.serve = true;
+  if (!second && G.stats && G.stats[p.id]) G.stats[p.id].first++;
   p.swingAnim = .25; Sound.hit(); G.phase = "rally"; hideBanner();
   Pred.serveStruck(); G.events && G.events.push("hit");
   const rcv = G.p[1 - p.idx]; rcv.willMiss = !rcv.human && Math.random() < aiProf(rcv).miss;
@@ -1405,6 +1467,7 @@ function onBounce() {
 function fault(call) {
   const b = G.ball; b.dead = true;
   if (G.faults === 0) {
+    const sv = G.p[b.last]; if (G.stats && sv && G.stats[sv.id]) G.stats[sv.id].firstMiss++;
     G.faults = 1; G.phase = "dead"; G.timer = 0; G.next = "serve";
     Sound.say(call === "Out" ? "Out" : "Fault"); showBanner(call === "Out" ? "Out" : "Fault", "Second serve", 1100);
   } else { G.faults = 0; endPoint(1 - b.last, "Double fault"); }
@@ -1453,6 +1516,8 @@ function endPoint(winner, call) {
     sw.won++;
     if (call === "Ace") sw.aces++; else if (call === "Double fault") sl.df++;
     else if (call === "Net") sl.net++; else if (call === "Out") sl.out++; else sw.winners++;
+    const ss = G.stats[G.p[serverBefore].id]; ss.servePts++; if (winner === serverBefore) ss.serveWon++;
+    G.maxRally = Math.max(G.maxRally || 0, rally);
   }
   let say = result === "match" ? `Game, set and match, ${w.name}.` : result === "game" ? `Game, ${w.name}.` : scoreCall();
   if (["Out", "Net", "Double fault"].includes(call)) say = `${call}. ${say}`;
@@ -1842,6 +1907,8 @@ const NET = {
       else if (name === "ui:banner") showBanner(...args);
       else if (name === "ui:hide") hideBanner();
       else if (name === "fx") { G.fx = { ...args[0], t0: G.time }; if (args[0].kind === "ace") aceOverlay({ name: args[0].name }); }
+      else if (name === "ui:end") { const [title, ps, stats, mr, venue] = args; $("endTitle").textContent = title; $("endSub").textContent = "Online match. The host's browser recorded the result.";
+        $("endRematch").hidden = true; renderEndStats(ps[0], ps[1], stats, mr, venue); playEndMusic(); }
       else if (name === "ui:break") { $("breakBox").hidden = !args[0]; if (args[1]) $("breakSong").textContent = args[1]; }
     });
   },
@@ -1915,18 +1982,71 @@ function matchOver(w, l) {
   const me = myPlayer(), gw = G.games[w.idx], gl = G.games[l.idx];
   const reported = !!me && omegaOn() && NET.role !== "guest";
   if (reported) send({ type: "match_result", winner: w.id, loser: l.id, gw, gl, stadium: G.st.name, stats: G.stats });
-  $("endTitle").textContent = `${w.name} wins ${gw}–${gl}`;
+  $("endTitle").textContent = `${w.name} wins`;
+  renderEndStats(G.p[0], G.p[1], G.stats, G.maxRally, G.st.name);
+  NET.emit("ui:end", [`${w.name} wins`, G.p.map(p => ({ name: p.name, color: p.color, id: p.id, games: G.games[p.idx] })), G.stats, G.maxRally, G.st.name]);
+  playEndMusic();
   $("endSub").textContent = reported ? "Result sent to Omega. It records the match and updates both players' levels, so its next proposals change."
     : me ? "Omega is offline, so this result wasn't recorded." : "AI vs AI matches aren't recorded.";
   $("endRematch").hidden = !me || !omegaOn() || NET.role === "guest";
   $("endCard").hidden = false; hideBanner();
 }
-$("endClose").onclick = () => { $("endCard").hidden = true; };
-$("endAgain").onclick = () => { $("endCard").hidden = true; $("playBtn").click(); };
+function renderEndStats(a, b, stats, maxRally, venue) {
+  const sa = stats[a.id] || {}, sb = stats[b.id] || {};
+  const ga = a.games ?? G.games[a.idx], gb = b.games ?? G.games[b.idx];
+  $("endScore").innerHTML = `<div class="who"><i style="background:${esc(a.color)}"></i><span>${esc(a.name)}</span></div>
+    <div class="big">${ga > gb ? `<b>${ga}</b>` : ga}–${gb > ga ? `<b>${gb}</b>` : gb}</div>
+    <div class="who r"><span>${esc(b.name)}</span><i style="background:${esc(b.color)}"></i></div>`;
+  const pct = (n, d) => d ? Math.round(100 * n / d) : 0;
+  const rows = [
+    ["Points won", sa.won || 0, sb.won || 0],
+    ["Aces", sa.aces || 0, sb.aces || 0],
+    ["Winners", sa.winners || 0, sb.winners || 0],
+    ["Double faults", sa.df || 0, sb.df || 0, true],
+    ["Errors (net and out)", (sa.net || 0) + (sa.out || 0), (sb.net || 0) + (sb.out || 0), true],
+    ["1st serve in", pct((sa.first || 0) - (sa.firstMiss || 0), sa.first), pct((sb.first || 0) - (sb.firstMiss || 0), sb.first), false, "%"],
+    ["Points won on serve", pct(sa.serveWon, sa.servePts), pct(sb.serveWon, sb.servePts), false, "%"],
+  ];
+  $("endStats").innerHTML = rows.map(([label, x, y, lowWins, unit = ""]) => {
+    const tot = x + y, wx = unit ? x : tot ? 100 * x / tot : 0, wy = unit ? y : tot ? 100 * y / tot : 0;
+    const leadX = lowWins ? x < y : x > y, leadY = lowWins ? y < x : y > x;
+    return `<div class="st-row"><div class="v">${x}${unit}</div>
+      <div class="mid"><div class="lbl">${label}</div><div class="bars">
+        <div class="sbar l"><i class="${leadX ? "lead" : ""}" data-w="${wx}" style="background:${esc(a.color)}"></i></div>
+        <div class="sbar"><i class="${leadY ? "lead" : ""}" data-w="${wy}" style="background:${esc(b.color)}"></i></div></div></div>
+      <div class="v r">${y}${unit}</div></div>`;
+  }).join("") + `<div class="st-single">Longest rally <b>${maxRally || 0} shots</b> · ${esc(venue || "")}</div>`;
+  requestAnimationFrame(() => requestAnimationFrame(() => $("endStats").querySelectorAll("i[data-w]").forEach(i => i.style.width = i.dataset.w + "%")));
+  $("endCard").hidden = false;
+}
+function playEndMusic() {
+  Sound.crowdLevel && Sound.crowdLevel(.07);
+  const song = Sound.startMusic();
+  $("endSong").hidden = !song; if (song) $("endSong").textContent = song;
+}
+/* ---------- your own songs: stored in this browser (IndexedDB), never uploaded ---------- */
+const SongStore = {
+  db() { return new Promise((ok, no) => { try { const r = indexedDB.open("mp_songs", 1); r.onupgradeneeded = () => r.result.createObjectStore("songs", { keyPath: "name" }); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); } catch (e) { no(e); } }); },
+  async all() { try { const d = await this.db(); return await new Promise(ok => { const q = d.transaction("songs").objectStore("songs").getAll(); q.onsuccess = () => ok(q.result || []); q.onerror = () => ok([]); }); } catch { return []; } },
+  async put(list) { try { const d = await this.db(); const t = d.transaction("songs", "readwrite"); list.forEach(x => t.objectStore("songs").put(x)); await new Promise(ok => t.oncomplete = t.onerror = ok); } catch {} },
+  async clear() { try { const d = await this.db(); const t = d.transaction("songs", "readwrite"); t.objectStore("songs").clear(); await new Promise(ok => t.oncomplete = t.onerror = ok); } catch {} },
+};
+function songNote() { const n = Sound.userSongs.length; $("sSongsNote").textContent = n ? `${n} song${n > 1 ? "s" : ""} ready: ${Sound.userSongs.map(s => s.name.replace(/\.[a-z0-9]+$/i, "")).slice(0, 3).join(", ")}${n > 3 ? "…" : ""}` : "Using the built-in generated music."; }
+SongStore.all().then(list => { Sound.userSongs = list; songNote(); });
+$("sSongs").onchange = async (e) => {
+  const files = [...e.target.files].filter(f => f.type.startsWith("audio/")).slice(0, 10);
+  if (!files.length) return;
+  const list = files.map(f => ({ name: f.name, blob: f }));
+  Sound.userSongs = list; songNote(); await SongStore.clear(); await SongStore.put(list); e.target.value = "";
+};
+$("sSongsClear").onclick = async () => { Sound.userSongs = []; songNote(); await SongStore.clear(); };
+function closeEnd() { $("endCard").hidden = true; Sound.stopMusic(); }
+$("endClose").onclick = () => closeEnd();
+$("endAgain").onclick = () => { closeEnd(); $("playBtn").click(); };
 $("endRematch").onclick = () => {
   const me = myPlayer() || G.p[0], opp = G.p[1 - me.idx];
   send({ type: "say", who: player(ME).name, text: `Book me a rematch with ${opp.name} this weekend at a fair time.` });
-  $("endCard").hidden = true; stopMatch();
+  closeEnd(); stopMatch();
   if (panel.hidden) $("fab").click();
   showTab("chat");
 };
