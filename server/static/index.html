@@ -210,6 +210,36 @@
   .st-single { text-align: center; font-size: 13px; color: var(--muted); }
   .st-single b { color: var(--ink); }
   .file-btn { display: inline-flex; align-items: center; }
+  .mp-badge { display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; font-size: 11px; font-weight: 700; color: var(--ok); }
+  .mp-badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
+  .invite { position: fixed; left: 50%; top: 70px; transform: translateX(-50%); z-index: 60; display: flex; align-items: center; gap: 12px;
+            width: min(520px, calc(100vw - 24px)); background: #fff; color: var(--ink); border-radius: 14px; padding: 12px 14px;
+            box-shadow: 0 18px 50px rgba(0,0,0,.35); border: 2px solid var(--ball); animation: invIn .35s cubic-bezier(.2,.9,.3,1.2); }
+  @keyframes invIn { from { opacity: 0; transform: translate(-50%, -14px); } }
+  .inv-dot { width: 34px; height: 34px; border-radius: 50%; flex: none; display: grid; place-items: center; font-weight: 800; color: var(--ink); }
+  .inv-text { flex: 1; min-width: 0; display: grid; gap: 2px; font-size: 14px; }
+  .inv-text small { color: var(--muted); font-size: 12px; }
+  .inv-btns { display: flex; gap: 6px; flex: none; }
+  @media (max-width: 520px) { .invite { flex-wrap: wrap; } .inv-btns { width: 100%; } .inv-btns .btn { flex: 1; } }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 61; background: rgba(13,22,38,.92); color: #fff;
+           padding: 10px 16px; border-radius: 12px; font-size: 14px; max-width: calc(100vw - 24px); box-shadow: 0 10px 30px rgba(0,0,0,.3); }
+  .mp-me { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--rule); border-radius: 12px; }
+  .mp-me i { width: 12px; height: 12px; border-radius: 50%; background: var(--ok); flex: none; }
+  .mp-me i.off { background: var(--clay); }
+  .mp-me div { flex: 1; min-width: 0; } .mp-me small { display: block; color: var(--muted); font-size: 12px; }
+  .mp-list { display: grid; gap: 6px; margin: 8px 0 4px; max-height: 260px; overflow: auto; }
+  .mp-user { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--mist); }
+  .mp-user .av { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 13px; flex: none; color: var(--ink); }
+  .mp-user .nm { flex: 1; min-width: 0; display: grid; } .mp-user .nm b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mp-user .nm small { color: var(--muted); font-size: 12px; }
+  .mp-user .btn { height: 30px; font-size: 13px; }
+  .mp-empty { color: var(--muted); font-size: 14px; padding: 10px 0; }
+  .mp-form { display: grid; gap: 10px; }
+  .mp-form label { display: grid; gap: 4px; font-size: 13px; font-weight: 600; }
+  .mp-form input[type=text] { height: 40px; border: 1px solid var(--rule); border-radius: 10px; padding: 0 12px; font-size: 16px; }
+  .mp-err { color: var(--clay); font-size: 13px; }
+  details.mp-code summary { cursor: pointer; font-size: 13px; color: var(--muted); margin-top: 10px; }
+  .mp-h { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-top: 14px; }
   .muted-note { font-size: 12px; color: var(--muted); margin-top: 6px; }
   .end-song { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
   .end-song::before { content: "♪ "; color: var(--court); }
@@ -399,7 +429,7 @@
       <h1>Choose your player</h1>
       <p>Pick who you are, then ask Omega to find you a match, or go straight to the court. All players are sample profiles.</p>
       <div class="roster" id="roster"></div>
-      <div class="select-foot"><span class="pick-note" id="pickNote">Pick a player to continue</span><button class="btn quiet" id="helpBtn2" type="button">How to play</button><button class="btn quiet" id="customBtn" type="button">Customise player and racket</button><button class="btn ballbtn" id="enter" disabled>Go to the court</button></div>
+      <div class="select-foot"><span class="pick-note" id="pickNote">Pick a player to continue</span><button class="btn quiet" id="helpBtn2" type="button">How to play</button><button class="btn quiet" id="mpBtn2" type="button">Multiplayer</button><button class="btn quiet" id="customBtn" type="button">Customise player and racket</button><button class="btn ballbtn" id="enter" disabled>Go to the court</button></div>
     </div>
     <div class="select-chat" id="selectChat"></div>
   </div>
@@ -425,7 +455,7 @@
   </div>
   <div class="zone right">
     <button class="btn quiet" id="helpBtn" type="button" title="How to play" aria-label="How to play">?<span class="lbl"> Help</span></button>
-    <button class="btn quiet" id="onlineBtn" type="button">Online</button>
+    <button class="btn quiet" id="onlineBtn" type="button">Multiplayer<span class="mp-badge" id="mpBadge" hidden></span></button>
     <button class="btn quiet" id="settingsBtn" type="button" title="Settings" aria-label="Settings">⚙<span class="lbl"> Settings</span></button>
     <button class="btn quiet" id="pauseBtn" type="button" disabled>Pause</button>
     <button class="btn primary" id="playBtn" type="button">Play match</button>
@@ -565,8 +595,8 @@
     <div class="modal-body help" data-hpane="more" hidden>
       <h3>Omega, your match coordinator</h3>
       <p>Omega's MeTTa rules pick a fair opponent (similar level), a court both players can reach, and a time you're both free. If a court gets taken or a player drops out, tell Omega or press <b>Mark court as taken</b>, and it re-plans. It always asks both players before it books.</p>
-      <h3>Play online</h3>
-      <p>Press <b>Online → Create a room</b> and send your friend the code or invite link. They open the page, pick a player, and choose <b>Join room</b>. The host presses <b>Play match</b>.</p>
+      <h3>Multiplayer</h3>
+      <p>Press <b>Multiplayer</b> and set a username and level. You're now online. Everyone else who has the page open appears in <b>Players online</b>. Press <b>Invite</b> next to a player. They get a pop-up saying you've invited them. When they accept, you're both put in a room (its code is shown), and you press <b>Start match</b>. You can also share a 4-letter room code instead.</p>
       <h3>Predictions</h3>
       <p>Before a serve, back a player to win the point with play coins. Coins have no cash value.</p>
       <h3>Offline</h3>
@@ -578,12 +608,18 @@
 
 <div class="modal-back" id="online" hidden>
   <section class="modal" role="dialog" aria-modal="true" aria-labelledby="onTitle" style="width:min(520px,100%)">
-    <div class="modal-head"><h2 id="onTitle">Play online</h2></div>
+    <div class="modal-head"><h2 id="onTitle">Multiplayer</h2></div>
     <div class="modal-body" id="onBody"></div>
     <div class="modal-foot"><button class="btn quiet" id="onLeave" type="button">Leave room</button><button class="btn primary" id="onClose" type="button">Close</button></div>
   </section>
 </div>
 
+<div class="invite" id="invite" hidden role="alertdialog" aria-labelledby="invText">
+  <div class="inv-dot" id="invDot"></div>
+  <div class="inv-text"><b id="invText"></b><small id="invSub"></small></div>
+  <div class="inv-btns"><button class="btn quiet" id="invNo" type="button">Decline</button><button class="btn primary" id="invYes" type="button">Accept</button></div>
+</div>
+<div class="toast" id="toast" hidden role="status" aria-live="polite"></div>
 <div class="coach" id="coach" hidden role="status" aria-live="polite">
   <div class="coach-head"><span class="coach-tag" id="coachTag">Coach Omega</span><button type="button" id="coachClose" aria-label="Close">✕</button></div>
   <div id="coachText"></div>
@@ -754,7 +790,7 @@ function updatePickState() {
 
 function enterCourt() {
   $("select").hidden = true; dockPanel(false);
-  if (new URLSearchParams(location.search).get("room") && !NET.role) setTimeout(() => { renderOnline(); $("online").hidden = false; }, 300);
+  if (new URLSearchParams(location.search).get("room") && !NET.role) setTimeout(() => openMultiplayer(), 300);
   $("meName").textContent = player(ME).name;
   $("meDot").style.background = COLORS[ME] || "#ddd";
   $("oppSel").innerHTML = SAMPLE.players.filter(p => p.id !== ME)
@@ -1295,11 +1331,12 @@ function resetPreview() {
 ["oppSel", "stadiumSel"].forEach(id => $(id).addEventListener("change", () => { if (!G.running) resetPreview(); }));
 
 function startMatch() {
-  if (!ME) return;
+  if (!ME && !NET.override) return;
   Sound.init();
   G.mode = $("modeSel").value; G.fmt = $("fmtSel").value;
   G.st = STADIUMS[$("stadiumSel").value] || STADIUMS.oriente;
-  G.p = [makePlayer(ME, 0, G.mode === "play", true), makePlayer($("oppSel").value, 1, false)];
+  G.p = NET.override ? [playerFromInfo(NET.override[0], 0, keys), playerFromInfo(NET.override[1], 1, NET.remote)]   // multiplayer: both profiles
+                     : [makePlayer(ME, 0, G.mode === "play", true), makePlayer($("oppSel").value, 1, false)];
   Object.assign(G, { running: true, paused: false, server: Math.random() < .5 ? 0 : 1, points: [0, 0], games: [0, 0], tb: false, tbPts: [0, 0],
                      faults: 0, winner: null, rally: 0, phase: "serve", timer: 0 });
   $("playBtn").textContent = "Restart"; $("pauseBtn").disabled = false; $("pauseBtn").textContent = "Pause";
@@ -1821,32 +1858,60 @@ function frame(t) {
    ===================================================================== */
 const NET = {
   ws: null, role: null, code: null, peer: null, remote: {}, swings: 0, serves: 0, seenSw: 0, seenSv: 0, ev: [], timer: null,
-  myInfo() { return { id: ME, name: player(ME).name, level: player(ME).level, kit: { ...SET.kit }, racket: SET.racket, manual: SET.swing === "space" }; },
+  uid: null, lobby: [], sent: [], received: [], online: false, override: null, retry: null, profErr: "", editing: false, wantOpen: false,
+  myInfo() {
+    const pr = PROFILE || { name: player(ME).name, level: player(ME).level };
+    return { id: "u_" + (this.uid || "me"), uid: this.uid, name: pr.name, level: pr.level, kit: { ...SET.kit }, racket: SET.racket, manual: SET.swing === "space" };
+  },
+  hello() { if (PROFILE) this.send({ t: "hello", profile: { name: PROFILE.name, level: PROFILE.level, kit: { ...SET.kit }, racket: SET.racket, manual: SET.swing === "space" } }); },
   connect(onOpen) {
+    onOpen = onOpen || (() => {});
     if (this.ws && this.ws.readyState === 1) return onOpen();
     if (this.ws && this.ws.readyState === 0) { this.ws.addEventListener("open", onOpen, { once: true }); return; }
-    renderOnline(null, "Connecting…");
+    clearTimeout(this.retry);
     this.ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/play");
     let opened = false;
-    this.ws.onopen = () => { opened = true; onOpen(); };
+    this.ws.onopen = () => { opened = true; this.online = true; this.hello(); onOpen(); renderOnline(); };
     this.ws.onmessage = (e) => this.onMessage(JSON.parse(e.data));
     this.ws.onclose = () => {
-      if (!opened) { this.ws = null; return renderOnline("Couldn't reach the online server. Restart the web app (python server/app.py) so it has online rooms, then try again."); }
-      if (this.role) { const was = this.role; this.reset(); if (G.running) stopMatch(true); showBanner("Connection lost", was === "guest" ? "You left the online match" : ""); renderOnline(); }
+      this.online = false; this.uid = null; this.lobby = []; this.sent = []; this.received = []; updateBadge();
+      if (!opened) { this.ws = null; renderOnline("Couldn't reach the multiplayer server. Restart the web app (python server/app.py), then try again."); }
+      else if (this.role) { const was = this.role; this.reset(); if (G.running) stopMatch(true); showBanner("Connection lost", was === "guest" ? "You left the match" : ""); renderOnline(); }
+      else renderOnline();
+      this.ws = null;
+      if (PROFILE) { clearTimeout(this.retry); this.retry = setTimeout(() => this.connect(), 4000); }   // stay online: reconnect quietly
     };
   },
   send(m) { if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify(m)); },
   emit(name, args) { if (this.role === "host" && G.running) this.ev.push([name, args || []]); },
-  create() { if (!ME) return; this.connect(() => this.send({ t: "create", info: this.myInfo() })); },
-  join(code) { if (!ME) return; this.connect(() => this.send({ t: "join", code, info: this.myInfo() })); },
-  leave() { if (this.ws) this.ws.close(); this.reset(); if (G.running) stopMatch(true); renderOnline(); },
+  create() { if (!PROFILE) return renderOnline(); this.connect(() => this.send({ t: "create", info: this.myInfo() })); },
+  join(code) { if (!PROFILE) return renderOnline(); this.connect(() => this.send({ t: "join", code, info: this.myInfo() })); },
+  invite(id) { this.send({ t: "invite", to: id }); },
+  cancel(id) { this.send({ t: "cancel", to: id }); },
+  answer(id, accept) { this.send({ t: "answer", from: id, accept }); hideInvite(); },
+  leave() { this.send({ t: "leave" }); this.reset(); if (G.running) stopMatch(true); renderOnline(); },
   reset() { clearInterval(this.timer); this.timer = null; this.role = null; this.code = null; this.peer = null; window.VIEW_SIDE = 1; $("playBtn").disabled = false; document.body.classList.remove("guest"); },
   onMessage(m) {
+    if (m.t === "welcome") { this.uid = m.id; this.profErr = ""; renderOnline(); return; }
+    if (m.t === "name_taken" || m.t === "name_bad") { this.profErr = m.message; this.editing = true; this.uid = null; renderOnline(); $("online").hidden = false; return; }
+    if (m.t === "lobby") { this.lobby = m.users || []; this.sent = m.sent || []; this.received = m.received || []; updateBadge(); if (!$("online").hidden) renderOnline(); return; }
+    if (m.t === "invited") { showInvite(m.from); return; }
+    if (m.t === "invite_cancelled") { if (INVITE_FROM === m.from.id) hideInvite(); showToast(`${m.from.name} cancelled the invite.`); return; }
+    if (m.t === "invite_sent") { showToast(`Invite sent to ${m.to.name}. Waiting for them to answer…`); return; }
+    if (m.t === "declined") { showToast(`${m.by.name} declined your invite.`); return; }
+    if (m.t === "notice") { showToast(m.message); return; }
+    if (m.t === "matched") {
+      hideInvite(); ensureCourt();
+      this.role = m.role; this.code = m.code; this.peer = m.peer;
+      if (m.role === "guest") { $("playBtn").disabled = true; showBanner(`You're in ${m.peer.name}'s room`, `Room ${m.code}. Waiting for ${m.peer.name} to start`, 4000); $("online").hidden = true; }
+      else { showBanner(`${m.peer.name} accepted`, `Room ${m.code}. Press Start match`, 3000); renderOnline(); $("online").hidden = false; }
+      renderOnline(); return;
+    }
     if (m.t === "created") { this.role = "host"; this.code = m.code; renderOnline(); }
     else if (m.t === "error") { renderOnline(m.message); }
     else if (m.t === "guest") { this.peer = m.info; renderOnline(); showBanner(`${m.info.name} joined your room`, "Press Play match to start", 2500); }
     else if (m.t === "joined") { this.role = "guest"; this.code = m.code; this.peer = m.info; renderOnline(); $("playBtn").disabled = true; }
-    else if (m.t === "left") { const n = this.peer ? this.peer.name : "Your opponent"; if (G.running) stopMatch(true); if (this.role === "host") { this.peer = null; } else this.reset(); renderOnline(); showBanner(`${n} left the match`, "", 2500); }
+    else if (m.t === "left") { const n = this.peer ? this.peer.name : "Your opponent"; if (G.running) stopMatch(true); this.reset(); renderOnline(); showBanner(`${n} left the match`, "", 2500); }
     else if (m.t === "input" && this.role === "host") { this.remote.left = m.k.left; this.remote.right = m.k.right; this.remote.up = m.k.up; this.remote.down = m.k.down; this.handlePresses(m); }
     else if (m.t === "start" && this.role === "guest") this.guestStart(m);
     else if (m.t === "snap" && this.role === "guest") this.applySnap(m);
@@ -1856,11 +1921,10 @@ const NET = {
   startOnline() {
     if (!this.peer) return showBanner("Waiting for an opponent", `Share room code ${this.code}`, 2200);
     $("modeSel").value = "play";
+    this.override = [this.myInfo(), this.peer];
     startMatch();
-    const guest = playerFromInfo(this.peer, 1, this.remote);
-    G.p[1] = guest; G.p[0].input = keys;
+    this.override = null;
     Pred.locked = false; $("predict").hidden = true;
-    setupServe(); renderScore();
     this.send({ t: "start", st: $("stadiumSel").value, fmt: G.fmt, players: G.p.map(p => ({ id: p.id, name: p.name, level: p.level, kit: p.kit, racket: Object.keys(RACKETS).find(k => RACKETS[k] === p.racket) || "allround" })) });
     clearInterval(this.timer); this.timer = setInterval(() => this.sendSnap(), 50);
     $("online").hidden = true;
@@ -1908,7 +1972,7 @@ const NET = {
       else if (name === "ui:hide") hideBanner();
       else if (name === "fx") { G.fx = { ...args[0], t0: G.time }; if (args[0].kind === "ace") aceOverlay({ name: args[0].name }); }
       else if (name === "ui:end") { const [title, ps, stats, mr, venue] = args; $("endTitle").textContent = title; $("endSub").textContent = "Online match. The host's browser recorded the result.";
-        $("endRematch").hidden = true; renderEndStats(ps[0], ps[1], stats, mr, venue); playEndMusic(); }
+        $("endRematch").hidden = true; $("endAgain").hidden = true; renderEndStats(ps[0], ps[1], stats, mr, venue); playEndMusic(); }
       else if (name === "ui:break") { $("breakBox").hidden = !args[0]; if (args[1]) $("breakSong").textContent = args[1]; }
     });
   },
@@ -1925,32 +1989,113 @@ function playerFromInfo(info, idx, input) {
   Sound[n] = (...a) => { NET.emit("s:" + n, a); return orig(...a); };
 });
 
+let PROFILE = store.get("mp_profile");
+let INVITE_FROM = null, inviteTimer = null, toastTimer = null;
+function initials(n) { return esc(String(n || "?").trim().slice(0, 1).toUpperCase()); }
+function showToast(text, ms = 3500) { const t = $("toast"); t.textContent = text; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, ms); }
+function updateBadge() {
+  const n = NET.lobby.filter(u => u.id !== NET.uid).length, b = $("mpBadge");
+  b.hidden = !NET.online || !NET.uid; b.textContent = n ? String(n) : "";
+  b.title = `${n} other player${n === 1 ? "" : "s"} online`;
+}
+function ping() {
+  try { Sound.init(); const c = Sound.ctx; if (!c) return; [0, .14].forEach((d, i) => { const o = c.createOscillator(), g = c.createGain();
+    o.frequency.value = i ? 990 : 660; g.gain.setValueAtTime(.0001, c.currentTime + d); g.gain.linearRampToValueAtTime(.25, c.currentTime + d + .02);
+    g.gain.exponentialRampToValueAtTime(.0001, c.currentTime + d + .25); o.connect(g); g.connect(Sound.master || c.destination); o.start(c.currentTime + d); o.stop(c.currentTime + d + .3); }); } catch {}
+}
+function showInvite(from) {
+  INVITE_FROM = from.id;
+  $("invDot").style.background = from.color || "#ddd"; $("invDot").innerHTML = initials(from.name);
+  $("invText").textContent = `${from.name} has invited you to a match`;
+  $("invSub").textContent = `Level ${Number(from.level).toFixed(1)}. Accept to join their room.`;
+  $("invite").hidden = false; ping();
+  clearTimeout(inviteTimer); inviteTimer = setTimeout(hideInvite, 60000);
+}
+function hideInvite() { $("invite").hidden = true; INVITE_FROM = null; clearTimeout(inviteTimer); }
+$("invYes").onclick = () => { if (INVITE_FROM) NET.answer(INVITE_FROM, true); };
+$("invNo").onclick = () => { if (INVITE_FROM) NET.answer(INVITE_FROM, false); };
+function ensureCourt() {
+  if (!ME && SAMPLE) ME = SAMPLE.players[0].id;            // the court needs a sample player behind the scenes
+  if (!$("select").hidden) enterCourt();
+}
+function saveProfile(name, level) {
+  PROFILE = { name: name.trim(), level: Number(level) }; store.set("mp_profile", PROFILE);
+  NET.editing = false; NET.profErr = "";
+  if (NET.ws && NET.ws.readyState === 1) NET.hello(); else NET.connect();
+  renderOnline();
+}
 function renderOnline(error, busy) {
   const el = $("onBody");
   if (busy) { el.innerHTML = `<p>${esc(busy)}</p>`; return; }
-  if (!ME) { el.innerHTML = `<p>Pick your player first, then come back here.</p>`; return; }
-  const me = esc(player(ME).name);
-  const publicNote = `<p class="on-note">Your opponent needs this page's address. In GitHub Codespaces: open the <b>Ports</b> tab, right-click port 8787, choose <b>Port Visibility → Public</b>, then share the address.</p>`;
+  const publicNote = `<p class="on-note">Friends join by opening this page's address. In GitHub Codespaces, open the <b>Ports</b> tab, right-click port 8787, choose <b>Port Visibility → Public</b>, and share the address.</p>`;
+  const err = error || "";
+  // 1. profile first
+  if (!PROFILE || NET.editing) {
+    const pr = PROFILE || { name: "", level: 3.5 };
+    el.innerHTML = `<div class="mp-form">
+      <p style="margin:0">${PROFILE ? "Edit your profile." : "Set up your player profile. This is the name other players see and invite."}</p>
+      <label>Username<input type="text" id="pfName" maxlength="16" value="${esc(pr.name)}" placeholder="e.g. DeeJhay" autocomplete="nickname"></label>
+      <label>Your level <span class="range"><input type="range" id="pfLevel" min="1.5" max="5.5" step="0.5" value="${pr.level}"><output id="pfLevelOut">${Number(pr.level).toFixed(1)}</output></span>
+        <small style="font-weight:400;color:var(--muted)">2.0 beginner · 3.5 club player · 5.0 strong. Your outfit and racket come from Settings → Player and racket.</small></label>
+      ${NET.profErr || err ? `<div class="mp-err">${esc(NET.profErr || err)}</div>` : ""}
+      <div class="on-row"><button class="btn primary" id="pfSave" type="button">Save and go online</button>${PROFILE ? `<button class="btn quiet" id="pfCancel" type="button">Cancel</button>` : ""}</div></div>${publicNote}`;
+    $("pfLevel").oninput = () => $("pfLevelOut").textContent = Number($("pfLevel").value).toFixed(1);
+    $("pfSave").onclick = () => {
+      const n = $("pfName").value.trim();
+      if (!/^[A-Za-z0-9_. -]{2,16}$/.test(n)) { NET.profErr = "Use 2 to 16 letters, numbers, spaces, dots, dashes or underscores."; return renderOnline(); }
+      saveProfile(n, $("pfLevel").value);
+    };
+    if ($("pfCancel")) $("pfCancel").onclick = () => { NET.editing = false; NET.profErr = ""; renderOnline(); };
+    $("onLeave").hidden = true; return;
+  }
+  const meRow = `<div class="mp-me"><i class="${NET.uid ? "" : "off"}"></i><div><b>${esc(PROFILE.name)}</b>
+      <small>${NET.uid ? "Online. Other players can see and invite you." : NET.online ? "Connecting…" : "Offline. Reconnecting…"} · Level ${Number(PROFILE.level).toFixed(1)}</small></div>
+      <button class="btn quiet" id="pfEdit" type="button">Edit profile</button></div>`;
+  // 2. in a room
   if (NET.role === "host") {
-    el.innerHTML = `<div>Room code</div><div class="code">${esc(NET.code)}</div>
-      <div class="on-row"><button class="btn quiet" id="copyLink" type="button">Copy invite link</button></div>
-      <p>${NET.peer ? `<b>${esc(NET.peer.name)}</b> has joined. Close this and press <b>Play match</b>.` : "Waiting for an opponent to join…"}</p>
-      <p class="on-note">You play ${me} from the near baseline. Your opponent plays from the far side.</p>${publicNote}`;
+    el.innerHTML = `${meRow}<div class="mp-h">Your room</div><div class="code">${esc(NET.code)}</div>
+      <p>${NET.peer ? `<b>${esc(NET.peer.name)}</b> is in your room.` : "Waiting for your opponent to join…"}</p>
+      <div class="on-row">${NET.peer ? `<button class="btn primary" id="mpStart" type="button">Start match</button>` : ""}<button class="btn quiet" id="copyLink" type="button">Copy invite link</button></div>
+      <p class="on-note">You serve from the near baseline. Your opponent plays from the far side. The match is played in your browser, so keep this tab open.</p>`;
     $("copyLink").onclick = () => { const url = location.origin + location.pathname + "?room=" + NET.code; navigator.clipboard && navigator.clipboard.writeText(url); $("copyLink").textContent = "Link copied"; };
+    if ($("mpStart")) $("mpStart").onclick = () => NET.startOnline();
   } else if (NET.role === "guest") {
-    el.innerHTML = `<p>You joined room <b>${esc(NET.code)}</b> as ${me}, against <b>${esc(NET.peer ? NET.peer.name : "the host")}</b>.</p><p>Waiting for the host to start the match…</p>`;
+    el.innerHTML = `${meRow}<div class="mp-h">Room ${esc(NET.code)}</div>
+      <p>You're playing <b>${esc(NET.peer ? NET.peer.name : "the host")}</b>. Waiting for them to start the match…</p>`;
   } else {
+    // 3. lobby: who is online
+    const others = NET.lobby.filter(u => u.id !== NET.uid);
+    const rows = others.map(u => {
+      const sent = NET.sent.includes(u.id), got = NET.received.includes(u.id), busyU = u.status !== "free";
+      const action = got ? `<button class="btn quiet" data-no="${esc(u.id)}" type="button">Decline</button><button class="btn primary" data-yes="${esc(u.id)}" type="button">Accept</button>`
+        : sent ? `<button class="btn quiet" data-cancel="${esc(u.id)}" type="button">Cancel invite</button>`
+        : busyU ? `<button class="btn quiet" type="button" disabled>In a match</button>`
+        : `<button class="btn primary" data-invite="${esc(u.id)}" type="button">Invite</button>`;
+      const note = got ? "Invited you" : sent ? "Invite sent, waiting…" : busyU ? "Playing a match" : "Available";
+      return `<div class="mp-user"><div class="av" style="background:${esc(u.color || "#ddd")}">${initials(u.name)}</div>
+        <div class="nm"><b>${esc(u.name)}</b><small>Level ${Number(u.level).toFixed(1)} · ${note}</small></div>${action}</div>`;
+    }).join("");
     const pre = new URLSearchParams(location.search).get("room") || "";
-    el.innerHTML = `${error ? `<p style="color:var(--clay)">${esc(error)}</p>` : ""}
-      <p>Play a live match against someone on another computer. You play as <b>${me}</b>.</p>
-      <div class="on-row"><button class="btn primary" id="onCreate" type="button">Create a room</button></div>
-      <div class="on-row"><input id="onCode" maxlength="4" placeholder="CODE" value="${esc(pre)}" aria-label="Room code"><button class="btn quiet" id="onJoin" type="button">Join room</button></div>${publicNote}`;
+    el.innerHTML = `${err ? `<p class="mp-err">${esc(err)}</p>` : ""}${meRow}
+      <div class="mp-h">Players online${NET.uid ? ` (${others.length})` : ""}</div>
+      <div class="mp-list">${NET.uid ? (rows || `<div class="mp-empty">No one else is online yet. Share this page's address with a friend. When they open it and set a username, they'll appear here.</div>`) : `<div class="mp-empty">Connecting to the lobby…</div>`}</div>
+      <details class="mp-code" ${pre ? "open" : ""}><summary>Use a room code instead</summary>
+        <div class="on-row" style="margin-top:8px"><button class="btn quiet" id="onCreate" type="button">Create a room</button></div>
+        <div class="on-row" style="margin-top:8px"><input id="onCode" maxlength="4" placeholder="CODE" value="${esc(pre)}" aria-label="Room code"><button class="btn quiet" id="onJoin" type="button">Join room</button></div></details>${publicNote}`;
+    el.querySelectorAll("[data-invite]").forEach(b => b.onclick = () => { NET.invite(b.dataset.invite); b.disabled = true; b.textContent = "Sending…"; });
+    el.querySelectorAll("[data-cancel]").forEach(b => b.onclick = () => NET.cancel(b.dataset.cancel));
+    el.querySelectorAll("[data-yes]").forEach(b => b.onclick = () => NET.answer(b.dataset.yes, true));
+    el.querySelectorAll("[data-no]").forEach(b => b.onclick = () => NET.answer(b.dataset.no, false));
     $("onCreate").onclick = () => NET.create();
     $("onJoin").onclick = () => { const c = $("onCode").value.trim(); if (c.length === 4) NET.join(c); else renderOnline("Enter the 4-letter room code."); };
   }
+  $("pfEdit").onclick = () => { NET.editing = true; renderOnline(); };
   $("onLeave").hidden = !NET.role;
 }
-$("onlineBtn").onclick = () => { renderOnline(); $("online").hidden = false; };
+function openMultiplayer() { renderOnline(); $("online").hidden = false; if (PROFILE && !NET.ws) NET.connect(); }
+$("onlineBtn").onclick = () => openMultiplayer();
+$("mpBtn2").onclick = () => openMultiplayer();
+if (PROFILE) NET.connect();                                   // show as online as soon as the page opens
 
 /* ---------- Ace: big animated text on screen, plus a 3D marker where it landed ---------- */
 function aceOverlay(w) {
@@ -1980,15 +2125,18 @@ function askCoach() {
 }
 function matchOver(w, l) {
   const me = myPlayer(), gw = G.games[w.idx], gl = G.games[l.idx];
-  const reported = !!me && omegaOn() && NET.role !== "guest";
+  const reported = !!me && omegaOn() && !NET.role;
   if (reported) send({ type: "match_result", winner: w.id, loser: l.id, gw, gl, stadium: G.st.name, stats: G.stats });
   $("endTitle").textContent = `${w.name} wins`;
   renderEndStats(G.p[0], G.p[1], G.stats, G.maxRally, G.st.name);
   NET.emit("ui:end", [`${w.name} wins`, G.p.map(p => ({ name: p.name, color: p.color, id: p.id, games: G.games[p.idx] })), G.stats, G.maxRally, G.st.name]);
   playEndMusic();
   $("endSub").textContent = reported ? "Result sent to Omega. It records the match and updates both players' levels, so its next proposals change."
+    : NET.role ? "Multiplayer match. Omega only records matches between its sample players."
     : me ? "Omega is offline, so this result wasn't recorded." : "AI vs AI matches aren't recorded.";
-  $("endRematch").hidden = !me || !omegaOn() || NET.role === "guest";
+  $("endRematch").hidden = !me || !omegaOn() || !!NET.role;
+  $("endAgain").hidden = NET.role === "guest";
+  $("endAgain").textContent = NET.role === "host" ? "Rematch" : "Play again";
   $("endCard").hidden = false; hideBanner();
 }
 function renderEndStats(a, b, stats, maxRally, venue) {

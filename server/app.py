@@ -345,10 +345,82 @@ def new_code():
             return code
 
 
+# ---------------------------------------------------------------- multiplayer lobby
+# Players set a profile name in the browser. While the page is open they show as online,
+# can invite each other, and an accepted invite opens a room for the two of them.
+import re as _re
+import uuid as _uuid
+
+USERS: dict = {}      # uid -> {"ws", "name", "level", "kit", "racket", "manual", "status"}
+SESS: dict = {}       # ws -> {"uid", "room", "role"}
+INVITES: dict = {}    # (from_uid, to_uid) -> time sent
+NAME_OK = _re.compile(r"^[A-Za-z0-9_. -]{2,16}$")
+INVITE_TTL = 60
+
+
+def public(uid):
+    u = USERS[uid]
+    return {"id": uid, "name": u["name"], "level": u["level"], "status": u["status"],
+            "color": (u.get("kit") or {}).get("shirt", "#dddddd")}
+
+
+def match_info(uid):
+    u = USERS[uid]
+    return {"id": "u_" + uid, "uid": uid, "name": u["name"], "level": u["level"], "kit": u.get("kit") or {},
+            "racket": u.get("racket", "allround"), "manual": bool(u.get("manual"))}
+
+
+async def send(ws, payload):
+    if ws is not None and not ws.closed:
+        try:
+            await ws.send_json(payload)
+        except Exception:
+            pass
+
+
+async def broadcast_lobby():
+    now = time.time()
+    for k in [k for k, t in INVITES.items() if now - t > INVITE_TTL]:
+        INVITES.pop(k, None)
+    users = [public(uid) for uid in USERS]
+    for uid, u in list(USERS.items()):
+        await send(u["ws"], {"t": "lobby", "users": users,
+                             "sent": [to for (fr, to) in INVITES if fr == uid],
+                             "received": [fr for (fr, to) in INVITES if to == uid]})
+
+
+def drop_invites(uid):
+    gone = [k for k in INVITES if uid in k]
+    for k in gone:
+        INVITES.pop(k, None)
+    return gone
+
+
+async def close_room(ws, notify=True):
+    """End the room this socket is in, for both players."""
+    sess = SESS.get(ws) or {}
+    code, role = sess.get("room"), sess.get("role")
+    room = ROOMS.pop(code, None) if code else None
+    sess["room"] = sess["role"] = None
+    if not room:
+        return
+    other = room["guest"] if role == "host" else room["host"]
+    if other is not None:
+        osess = SESS.get(other) or {}
+        osess["room"] = osess["role"] = None
+        if osess.get("uid") in USERS:
+            USERS[osess["uid"]]["status"] = "free"
+        if notify:
+            await send(other, {"t": "left", "who": role})
+    if sess.get("uid") in USERS:
+        USERS[sess["uid"]]["status"] = "free"
+
+
 async def play_ws(request):
     ws = web.WebSocketResponse(heartbeat=20, max_msg_size=256 * 1024)
     await ws.prepare(request)
-    room_code, role = None, None
+    SESS[ws] = {"uid": None, "room": None, "role": None}
+    sess = SESS[ws]
     try:
         async for msg in ws:
             if msg.type != WSMsgType.TEXT:
@@ -358,40 +430,133 @@ async def play_ws(request):
             except json.JSONDecodeError:
                 continue
             t = m.get("t")
-            if t == "create":
-                room_code, role = new_code(), "host"
-                ROOMS[room_code] = {"host": ws, "guest": None, "info": m.get("info", {})}
-                await ws.send_json({"t": "created", "code": room_code})
+            me = sess["uid"]
+
+            if t == "hello":                                   # join the lobby with a profile
+                prof = m.get("profile") or {}
+                name = str(prof.get("name", "")).strip()
+                if not NAME_OK.match(name):
+                    await send(ws, {"t": "name_bad", "message": "Use 2 to 16 letters, numbers, spaces, dots, dashes or underscores."})
+                    continue
+                if any(u["name"].lower() == name.lower() and uid != me for uid, u in USERS.items()):
+                    await send(ws, {"t": "name_taken", "message": f"Someone online is already called {name}. Pick another name."})
+                    continue
+                if len(USERS) >= 300 and not me:
+                    await send(ws, {"t": "notice", "message": "The lobby is full right now."})
+                    continue
+                try:
+                    level = max(1.0, min(7.0, float(prof.get("level", 3.5))))
+                except (TypeError, ValueError):
+                    level = 3.5
+                uid = me or _uuid.uuid4().hex[:8]
+                old = USERS.get(uid, {})
+                USERS[uid] = {"ws": ws, "name": name, "level": level, "kit": prof.get("kit") or {},
+                              "racket": str(prof.get("racket", "allround")), "manual": bool(prof.get("manual")),
+                              "status": old.get("status", "free")}
+                sess["uid"] = uid
+                await send(ws, {"t": "welcome", "id": uid, "name": name})
+                await broadcast_lobby()
+
+            elif t == "invite":
+                to = str(m.get("to", ""))
+                if not me:
+                    await send(ws, {"t": "notice", "message": "Set up your profile first."})
+                elif to == me or to not in USERS:
+                    await send(ws, {"t": "notice", "message": "That player isn't online any more."})
+                elif USERS[to]["status"] != "free":
+                    await send(ws, {"t": "notice", "message": f"{USERS[to]['name']} is in a match right now."})
+                elif USERS[me]["status"] != "free":
+                    await send(ws, {"t": "notice", "message": "Leave your current match first."})
+                elif (to, me) in INVITES:
+                    await send(ws, {"t": "notice", "message": f"{USERS[to]['name']} already invited you. Accept their invite instead."})
+                else:
+                    INVITES[(me, to)] = time.time()
+                    await send(USERS[to]["ws"], {"t": "invited", "from": public(me)})
+                    await send(ws, {"t": "invite_sent", "to": public(to)})
+                    await broadcast_lobby()
+
+            elif t == "cancel":
+                to = str(m.get("to", ""))
+                if INVITES.pop((me, to), None) and to in USERS:
+                    await send(USERS[to]["ws"], {"t": "invite_cancelled", "from": public(me)})
+                await broadcast_lobby()
+
+            elif t == "answer":
+                fr = str(m.get("from", ""))
+                sent_at = INVITES.pop((fr, me), None)
+                if not me or sent_at is None or fr not in USERS or time.time() - sent_at > INVITE_TTL:
+                    await send(ws, {"t": "notice", "message": "That invite has expired."})
+                    await broadcast_lobby()
+                    continue
+                if not m.get("accept"):
+                    await send(USERS[fr]["ws"], {"t": "declined", "by": public(me)})
+                    await broadcast_lobby()
+                    continue
+                if USERS[fr]["status"] != "free" or USERS[me]["status"] != "free":
+                    await send(ws, {"t": "notice", "message": f"{USERS[fr]['name']} is already in another match."})
+                    await broadcast_lobby()
+                    continue
+                for k in drop_invites(me) + drop_invites(fr):
+                    pass
+                host_ws = USERS[fr]["ws"]
+                code = new_code()
+                ROOMS[code] = {"host": host_ws, "guest": ws, "info": match_info(fr)}
+                SESS[host_ws].update(room=code, role="host")
+                sess.update(room=code, role="guest")
+                USERS[fr]["status"] = USERS[me]["status"] = "playing"
+                await send(host_ws, {"t": "matched", "code": code, "role": "host", "peer": match_info(me)})
+                await send(ws, {"t": "matched", "code": code, "role": "guest", "peer": match_info(fr)})
+                await broadcast_lobby()
+
+            elif t == "leave":
+                await close_room(ws)
+                await broadcast_lobby()
+
+            elif t == "create":                                # room by code (still available)
+                await close_room(ws)
+                code = new_code()
+                ROOMS[code] = {"host": ws, "guest": None, "info": m.get("info", {})}
+                sess.update(room=code, role="host")
+                if me:
+                    USERS[me]["status"] = "playing"
+                await send(ws, {"t": "created", "code": code})
+                await broadcast_lobby()
+
             elif t == "join":
                 code = str(m.get("code", "")).upper().strip()
                 room = ROOMS.get(code)
                 if not room:
-                    await ws.send_json({"t": "error", "message": f"No room with code {code}."})
+                    await send(ws, {"t": "error", "message": f"No room with code {code}."})
                 elif room["guest"] is not None:
-                    await ws.send_json({"t": "error", "message": "That room already has two players."})
+                    await send(ws, {"t": "error", "message": "That room already has two players."})
+                elif room["host"] is ws:
+                    await send(ws, {"t": "error", "message": "That's your own room."})
                 else:
-                    room_code, role = code, "guest"
+                    await close_room(ws)
+                    sess.update(room=code, role="guest")
                     room["guest"] = ws
-                    await ws.send_json({"t": "joined", "code": code, "info": room["info"]})
-                    await room["host"].send_json({"t": "guest", "info": m.get("info", {})})
-            elif room_code in ROOMS:
-                room = ROOMS[room_code]
-                other = room["guest"] if role == "host" else room["host"]
+                    if me:
+                        USERS[me]["status"] = "playing"
+                    await send(ws, {"t": "joined", "code": code, "info": room["info"]})
+                    await send(room["host"], {"t": "guest", "info": m.get("info", {})})
+                    await broadcast_lobby()
+
+            elif sess["room"] in ROOMS:                        # in a match: relay as-is
+                room = ROOMS[sess["room"]]
+                other = room["guest"] if sess["role"] == "host" else room["host"]
                 if other is not None and not other.closed:
-                    await other.send_str(msg.data)               # relay as-is (inputs, snapshots, chat)
+                    await other.send_str(msg.data)
     finally:
-        room = ROOMS.get(room_code)
-        if room:
-            other = room["guest"] if role == "host" else room["host"]
-            if other is not None and not other.closed:
-                try:
-                    await other.send_json({"t": "left", "who": role})
-                except Exception:
-                    pass
-            if role == "host":
-                ROOMS.pop(room_code, None)
-            else:
-                room["guest"] = None
+        await close_room(ws)
+        uid = sess.get("uid")
+        if uid and USERS.get(uid, {}).get("ws") is ws:
+            for fr, to in drop_invites(uid):
+                other = to if fr == uid else fr
+                if other in USERS:
+                    await send(USERS[other]["ws"], {"t": "invite_cancelled", "from": {"id": uid, "name": USERS[uid]["name"]}})
+            USERS.pop(uid, None)
+        SESS.pop(ws, None)
+        await broadcast_lobby()
     return ws
 
 
